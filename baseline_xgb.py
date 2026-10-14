@@ -80,12 +80,13 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", default="synthetic", choices=["synthetic", "ptbxl"])
     p.add_argument("--data-root", default=None)
+    p.add_argument("--cache-dir", default=None, help="folder with ptbxl.npz (default: <repo>/cache)")
     p.add_argument("--ckpt-dir", default=str(REPO_DIR / "checkpoints"))
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--debug", action="store_true")
     a = p.parse_args()
 
-    X, y, fold = load_dataset(a.data, a.data_root, debug=a.debug)
+    X, y, fold = load_dataset(a.data, a.data_root, debug=a.debug, cache_dir=a.cache_dir)
     tr, va, te = fold <= 8, fold == 9, fold == 10
     t0 = time.time()
     models = train_xgb(X[tr], y[tr], X[va], y[va], seed=a.seed)

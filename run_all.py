@@ -4,7 +4,7 @@ Before each run its final checkpoint is checked: finished runs are skipped, unfi
 picks up its _last.pt), new ones start. Each run executes as its own process; its wall-clock time is
 appended to <out-dir>/timing.csv. Stops at the first failing run.
 
-python run_all.py --data ptbxl --data-root PATH --ckpt-dir DIR --out-dir DIR [--debug]
+python run_all.py --data ptbxl --data-root PATH --ckpt-dir DIR --out-dir DIR [--cache-dir DIR] [--only RUN ...] [--debug]
 """
 from __future__ import annotations
 
@@ -58,17 +58,28 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", default="synthetic", choices=["synthetic", "ptbxl"])
     p.add_argument("--data-root", default=None)
+    p.add_argument("--cache-dir", default=None, help="folder with ptbxl.npz (default: <repo>/cache)")
     p.add_argument("--ckpt-dir", default=str(REPO_DIR / "checkpoints"))
     p.add_argument("--out-dir", default=str(REPO_DIR / "results"))
+    p.add_argument("--only", nargs="+", default=None, metavar="RUN",
+                   help="run only these entries of the run list, e.g. --only resnet_s0_c1 lg_edl_s0_c1")
     p.add_argument("--debug", action="store_true")
     a = p.parse_args()
     ckpt_dir, out_dir = Path(a.ckpt_dir), Path(a.out_dir)
     timing = out_dir / "timing.csv"
     device = get_device().type
 
+    runs = RUNS
+    if a.only:
+        names = {(f"xgb_s{s}" if m == "xgb" else run_name(m, s, c)): (m, c, s) for m, c, s in RUNS}
+        unknown = sorted(set(a.only) - set(names))
+        if unknown:
+            sys.exit(f"--only: not in the run list: {unknown}; valid names: {list(names)}")
+        runs = [names[n] for n in names if n in a.only]
+
     # Check every run first, so a bad setup fails now rather than an hour in.
     plan = []
-    for model, c, seed in RUNS:
+    for model, c, seed in runs:
         if model == "xgb":
             status = xgb_status(ckpt_dir, seed, a.data, a.debug)
         else:
@@ -88,6 +99,7 @@ def main() -> None:
         print(f"[{'resume' if status == 'partial' else 'start'}] {name}", flush=True)
         common = ["--data", a.data, "--ckpt-dir", str(ckpt_dir), "--seed", str(seed)]
         common += ["--data-root", a.data_root] if a.data_root else []
+        common += ["--cache-dir", a.cache_dir] if a.cache_dir else []
         common += ["--debug"] if a.debug else []
         if model == "xgb":
             cmd = [sys.executable, "-u", str(REPO_DIR / "baseline_xgb.py")] + common

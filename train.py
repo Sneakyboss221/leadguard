@@ -1,7 +1,7 @@
 """Train one model (SPEC section 4).
 
 python train.py --model lg_edl --seed 0 --corrupt-train 1 --data ptbxl --data-root PATH --ckpt-dir DIR
-                --out-dir DIR [--epochs 15] [--batch 128] [--debug]
+                --out-dir DIR [--cache-dir DIR] [--epochs 15] [--batch 128] [--debug]
 
 Checkpoints in --ckpt-dir, written atomically after every epoch:
   {model}_s{seed}_c{c}.pt       best weights so far (by validation macro-AUROC), used for evaluation
@@ -123,7 +123,7 @@ def train(a: argparse.Namespace) -> None:
 
     set_seed(a.seed)
     device = get_device()
-    X, y, fold = load_dataset(a.data, a.data_root, debug=a.debug)
+    X, y, fold = load_dataset(a.data, a.data_root, debug=a.debug, cache_dir=a.cache_dir)
     x_tr = torch.from_numpy(X[fold <= 8]).to(device)
     y_tr = torch.from_numpy(y[fold <= 8]).to(device)
     x_va, y_va = torch.from_numpy(X[fold == 9]).to(device), y[fold == 9]
@@ -216,6 +216,7 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--corrupt-train", type=int, default=1, choices=[0, 1])
     p.add_argument("--data", default="synthetic", choices=["synthetic", "ptbxl"])
     p.add_argument("--data-root", default=None)
+    p.add_argument("--cache-dir", default=None, help="folder with ptbxl.npz (default: <repo>/cache)")
     p.add_argument("--ckpt-dir", default=str(REPO_DIR / "checkpoints"))
     p.add_argument("--out-dir", default=str(REPO_DIR / "results"))
     p.add_argument("--sqa", default=None, help="SQA checkpoint (default: <ckpt-dir>/sqa.pt)")

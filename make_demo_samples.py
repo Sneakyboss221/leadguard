@@ -46,6 +46,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", default="synthetic", choices=["synthetic", "ptbxl"])
     p.add_argument("--data-root", default=None)
+    p.add_argument("--cache-dir", default=None, help="folder with ptbxl.npz (default: <repo>/cache)")
     p.add_argument("--ckpt-dir", default=str(REPO_DIR / "checkpoints"))
     p.add_argument("--results-dir", default=str(REPO_DIR / "results"), help="to cross-check the U threshold")
     p.add_argument("--out-dir", default=str(REPO_DIR / "demo_samples"))
@@ -54,7 +55,7 @@ def main() -> None:
     ckpt_dir, out_dir = Path(a.ckpt_dir), Path(a.out_dir)
     device = get_device()
 
-    X, y, fold, X_raw = load_dataset(a.data, a.data_root, debug=a.debug, return_raw=True)
+    X, y, fold, X_raw = load_dataset(a.data, a.data_root, debug=a.debug, return_raw=True, cache_dir=a.cache_dir)
     idx_va, idx_te = np.where(fold == 9)[0], np.where(fold == 10)[0]
     x_va, y_va = torch.from_numpy(X[idx_va]), y[idx_va]
     x_te, y_te = torch.from_numpy(X[idx_te]), y[idx_te]

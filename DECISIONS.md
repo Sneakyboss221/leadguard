@@ -71,6 +71,12 @@
 - The baseline shown is temperature-scaled, like in `evaluate.py`; lg_edl uses its Beta probabilities.
 - Styling: theme pinned to light in `.streamlit/config.toml` (otherwise Streamlit follows the OS dark mode and the custom light panels lose contrast). Model hues match the paper figures; status red is used only for the abstain state; no green "correct" state, since the demo cannot know the model is right.
 
+## Freeze review (Step 8)
+- Approved by the user: per-record training corruption (D3), the 95th-percentile abstain threshold (D7), and the EDL loss formulation (D15). The EDL loss still has to be checked against the text of Sensoy et al. 2018 before it is cited.
+- Added after the review: `--cache-dir` on every script that loads data (passed through by `run_all.py`); `evaluate.py --strict` (stop unless all 13 runs are finished); `run_all.py --only RUN ...` (run a subset of the run list, still logging `timing.csv`), used by `GUIDE.md` 9.4 for the first two real runs.
+- `GUIDE.md` section 9 now starts with a synthetic smoke test on the Colab GPU (the laptop never executed the CUDA / mixed-precision paths), sends every output to explicit Drive folders, and builds the demo samples on Colab.
+- All synthetic outputs (results, figures including the step-1 corruption figure, demo samples, checkpoints) were deleted before the real run; regenerate the corruption figure with `plot_corruptions.py --data ptbxl`.
+
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
 - XGBoost "missing" leads are detected from the signal (lead std < 1e-6 → features NaN), never from true severity.

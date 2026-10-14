@@ -79,6 +79,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", default="synthetic", choices=["synthetic", "ptbxl"])
     p.add_argument("--data-root", default=None)
+    p.add_argument("--cache-dir", default=None, help="folder with ptbxl.npz (default: <repo>/cache)")
     p.add_argument("--ckpt-dir", default=str(REPO_DIR / "checkpoints"))
     p.add_argument("--out-dir", default=str(REPO_DIR / "results"))
     p.add_argument("--epochs", type=int, default=15)
@@ -91,7 +92,7 @@ def main() -> None:
     set_seed(a.seed)
     device = get_device()
     epochs = 2 if a.debug else a.epochs
-    X, _, fold = load_dataset(a.data, a.data_root, debug=a.debug)
+    X, _, fold = load_dataset(a.data, a.data_root, debug=a.debug, cache_dir=a.cache_dir)
     x_tr = torch.from_numpy(X[fold <= 8]).to(device)
     val_sets = eval_sets(torch.from_numpy(X[fold == 9]).to(device), seed=1)
     test_sets = eval_sets(torch.from_numpy(X[fold == 10]).to(device), seed=2)

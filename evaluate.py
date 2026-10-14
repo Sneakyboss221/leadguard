@@ -7,7 +7,7 @@ lg_hard / lg_soft / lg_edl are evaluated with SQA-estimated q and with oracle q 
 Fitted on clean validation predictions (fold 9): one temperature per sigmoid model (all models except
 lg_edl), per-class F1 thresholds, and the lg_edl abstain threshold on U.
 
-python evaluate.py --data ptbxl --data-root PATH --ckpt-dir DIR --out-dir DIR [--debug]
+python evaluate.py --data ptbxl --data-root PATH --ckpt-dir DIR --out-dir DIR [--cache-dir DIR] [--strict] [--debug]
 """
 from __future__ import annotations
 
@@ -38,14 +38,18 @@ EPS = 1e-6
 
 # ------------------------------------------------------------------ loading
 
-def load_runs(ckpt_dir: Path, data: str, debug: bool, device) -> list[dict]:
-    """Finished runs from the run list, with their model loaded. Missing runs are reported and skipped."""
-    runs = []
+def load_runs(ckpt_dir: Path, data: str, debug: bool, device, strict: bool = False) -> list[dict]:
+    """Finished runs from the run list, with their model loaded.
+
+    Missing or unfinished runs are reported and skipped; with strict=True they stop the evaluation instead.
+    """
+    runs, missing = [], []
     for model, c, seed in RUNS:
         if model == "xgb":
             path = ckpt_dir / f"xgb_s{seed}.pkl"
             if not path.exists():
                 print(f"WARNING: {path.name} missing, not evaluated")
+                missing.append(path.stem)
                 continue
             obj, meta = load_xgb(path)
             if (meta.get("data"), meta.get("debug")) != (data, debug):
@@ -55,12 +59,16 @@ def load_runs(ckpt_dir: Path, data: str, debug: bool, device) -> list[dict]:
         status, _ = check_status(ckpt_dir, run_config(model, seed, c, data, debug, EPOCHS, BATCH))
         if status != "finished":
             print(f"WARNING: {run_name(model, seed, c)} is {status}, not evaluated")
+            missing.append(run_name(model, seed, c))
             continue
         best, _ = ckpt_paths(ckpt_dir, model, seed, c)
         net = build_model(model).to(device)
         net.load_state_dict(torch.load(best, map_location=device, weights_only=False)["state_dict"])
         runs.append({"run": run_name(model, seed, c), "model": model, "seed": seed, "corrupt_train": c,
                      "obj": net.eval()})
+    if strict and missing:
+        raise SystemExit(f"--strict: {len(missing)} of {len(RUNS)} runs are missing or unfinished: {missing}. "
+                         "Finish them with run_all.py (same arguments), then evaluate again.")
     return runs
 
 
@@ -198,8 +206,10 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", default="synthetic", choices=["synthetic", "ptbxl"])
     p.add_argument("--data-root", default=None)
+    p.add_argument("--cache-dir", default=None, help="folder with ptbxl.npz (default: <repo>/cache)")
     p.add_argument("--ckpt-dir", default=str(REPO_DIR / "checkpoints"))
     p.add_argument("--out-dir", default=str(REPO_DIR / "results"))
+    p.add_argument("--strict", action="store_true", help="stop if any run of the run list is missing or unfinished")
     p.add_argument("--n-boot", type=int, default=1000)
     p.add_argument("--debug", action="store_true", help="debug data and checkpoints; 100 bootstrap samples")
     a = p.parse_args()
@@ -209,11 +219,11 @@ def main() -> None:
     device = get_device()
     n_boot = 100 if a.debug else a.n_boot
 
-    X, y, fold = load_dataset(a.data, a.data_root, debug=a.debug)
+    runs = load_runs(ckpt_dir, a.data, a.debug, device, strict=a.strict)  # before loading data: fail fast
+    X, y, fold = load_dataset(a.data, a.data_root, debug=a.debug, cache_dir=a.cache_dir)
     x_va, y_va = torch.from_numpy(X[fold == 9]), y[fold == 9]
     x_te, y_te = torch.from_numpy(X[fold == 10]), y[fold == 10]
     del X
-    runs = load_runs(ckpt_dir, a.data, a.debug, device)
     sqa = load_sqa_checked(ckpt_dir / "sqa.pt", a.data, device) if any(r["model"] in USES_Q for r in runs) else None
     print(f"device {device} | val {len(y_va)} | test {len(y_te)} | runs {len(runs)}: {[r['run'] for r in runs]}")
 
