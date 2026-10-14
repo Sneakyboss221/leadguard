@@ -191,20 +191,21 @@ def abstain(U: torch.Tensor, q: torch.Tensor, threshold: float) -> torch.Tensor:
 class LeadGuard(nn.Module):
     """Lead encoder -> MALA (2 layers, 4 heads, d=128) -> q-weighted pooling -> head.
 
-    gating: "soft" uses q directly; "hard" replaces q by (q >= 0.5) as 0/1 (same attention and pooling code).
+    gating: "soft" uses q directly; "hard" replaces q by (q >= 0.5) as 0/1 (same attention and pooling code);
+    "none" ignores q (all ones: unmasked lead attention and mean pooling), used by the resnet_attn baseline.
     forward(x: (B, 12, T), q: (B, 12)) -> dict (see module docstring).
     """
 
     def __init__(self, gating: str = "soft", head: str = "sigmoid", layers: int = 2, heads: int = 4):
         super().__init__()
-        assert gating in ("soft", "hard") and head in ("sigmoid", "edl")
+        assert gating in ("soft", "hard", "none") and head in ("sigmoid", "edl")
         self.gating = gating
         self.encoder = LeadEncoder()
         self.layers = nn.ModuleList([MALALayer(D_MODEL, heads) for _ in range(layers)])
         self.head = SigmoidHead() if head == "sigmoid" else BetaEDLHead()
 
     def forward(self, x: torch.Tensor, q: torch.Tensor) -> dict:
-        q_soft = q.to(x.dtype)
+        q_soft = torch.ones_like(x[:, :, 0]) if self.gating == "none" else q.to(x.dtype)
         q = (q_soft >= 0.5).to(x.dtype) if self.gating == "hard" else q_soft
         key_bias, pool_w = gate_weights(q, guard_q=q_soft)
         h = self.encoder(x)
@@ -218,7 +219,67 @@ class LeadGuard(nn.Module):
         return out
 
 
+# ---------------------------------------------------------------- baselines
+# Baselines ignore q and see the corrupted input as is (dropped leads are zero-filled).
+
+class MLP(nn.Module):
+    """M2: flatten -> 12000-512-128-5 with dropout."""
+
+    def __init__(self, in_dim: int = N_LEADS * 1000, dropout: float = 0.3):
+        super().__init__()
+        self.net = nn.Sequential(nn.Flatten(), nn.Linear(in_dim, 512), nn.GELU(), nn.Dropout(dropout),
+                                 nn.Linear(512, 128), nn.GELU(), nn.Dropout(dropout))
+        self.head = SigmoidHead()
+
+    def forward(self, x: torch.Tensor, q: torch.Tensor | None = None) -> dict:
+        return self.head(self.net(x))
+
+
+class ResNet1d(nn.Module):
+    """M3: ResNet-1D over all 12 leads as channels; stem + 4 residual stages + global average pool."""
+
+    def __init__(self, channels: tuple[int, ...] = (64, 64, 128, 128)):
+        super().__init__()
+        self.stem = nn.Sequential(nn.Conv1d(N_LEADS, channels[0], 7, 2, 3, bias=False),
+                                  nn.BatchNorm1d(channels[0]), nn.GELU())
+        stages, c_in = [], channels[0]
+        for c in channels:
+            stages.append(ResBlock1d(c_in, c, stride=2))
+            c_in = c
+        self.stages = nn.Sequential(*stages)
+        self.proj = nn.Linear(c_in, D_MODEL)
+        self.head = SigmoidHead()
+
+    def forward(self, x: torch.Tensor, q: torch.Tensor | None = None) -> dict:
+        return self.head(self.proj(self.stages(self.stem(x)).mean(-1)))
+
+
+class PatchTransformer(nn.Module):
+    """M4: 1D Transformer over time patches (patch 25 -> 40 tokens of 12*25), unmasked, mean pooled."""
+
+    def __init__(self, patch: int = 25, t: int = 1000, d: int = D_MODEL, layers: int = 2, heads: int = 4):
+        super().__init__()
+        self.patch = patch
+        self.embed = nn.Linear(N_LEADS * patch, d)
+        self.pos = nn.Parameter(torch.randn(t // patch, d) * 0.02)
+        layer = nn.TransformerEncoderLayer(d, heads, dim_feedforward=256, dropout=0.1,
+                                           activation="gelu", batch_first=True, norm_first=True)
+        self.encoder = nn.TransformerEncoder(layer, layers, enable_nested_tensor=False)
+        self.norm = nn.LayerNorm(d)
+        self.head = SigmoidHead()
+
+    def forward(self, x: torch.Tensor, q: torch.Tensor | None = None) -> dict:
+        b, c, t = x.shape
+        tokens = x.view(b, c, t // self.patch, self.patch).permute(0, 2, 1, 3).reshape(b, t // self.patch, -1)
+        h = self.encoder(self.embed(tokens) + self.pos)
+        return self.head(self.norm(h).mean(1))
+
+
 MODELS = {
+    "mlp": MLP,
+    "resnet": ResNet1d,
+    "transformer": PatchTransformer,
+    "resnet_attn": lambda: LeadGuard(gating="none", head="sigmoid"),
     "lg_hard": lambda: LeadGuard(gating="hard", head="sigmoid"),
     "lg_soft": lambda: LeadGuard(gating="soft", head="sigmoid"),
     "lg_edl": lambda: LeadGuard(gating="soft", head="edl"),

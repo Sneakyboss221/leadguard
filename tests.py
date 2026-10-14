@@ -9,12 +9,14 @@ import torch
 from sklearn.metrics import roc_auc_score
 
 import corrupt
+from baseline_xgb import FEATURES, lead_features
 from data import load_dataset
-from models import Q_FLOOR, build_model, count_params, edl_loss, kl_anneal
+from models import MODELS, Q_FLOOR, build_model, count_params, edl_loss, kl_anneal
 from utils import set_seed
 
 B, T = 4, 1000
 LG_MODELS = ["lg_hard", "lg_soft", "lg_edl"]
+BASELINES = ["mlp", "resnet", "transformer", "resnet_attn"]
 ATOL = 1e-5
 
 
@@ -93,19 +95,35 @@ def test_degenerate_inputs(name):
 
 
 # 5. Shapes
-@pytest.mark.parametrize("name", LG_MODELS)
+@pytest.mark.parametrize("name", list(MODELS))
 def test_shapes(name):
     m, x = _model(name), _x()
     with torch.no_grad():
         out = m(x, torch.ones(B, 12))
     assert out["prob"].shape == (B, 5)
     assert out["logits"].shape == ((B, 10) if name == "lg_edl" else (B, 5))
+    assert torch.isfinite(out["prob"]).all()
     if name == "lg_edl":
         for key in ("alpha", "beta", "u"):
             assert out[key].shape == (B, 5)
         assert out["U"].shape == (B,)
         assert ((out["u"] > 0) & (out["u"] <= 1)).all()
-    assert count_params(m.encoder) + sum(count_params(l) for l in m.layers) < 1_000_000
+    if name in LG_MODELS + ["resnet_attn"]:
+        assert [a.shape for a in out["attn"]] == [(B, 4, 12, 12)] * 2
+        assert count_params(m.encoder) + sum(count_params(l) for l in m.layers) < 1_000_000
+    if name in BASELINES:  # baselines ignore the second argument
+        with torch.no_grad():
+            out0 = m(x, torch.zeros(B, 12))
+        assert torch.equal(out["logits"], out0["logits"])
+
+
+def test_xgb_features():
+    x = _x().numpy()
+    x[0, [6, 7]] = 0.0  # two missing leads in record 0
+    f = lead_features(x).reshape(B, 12, len(FEATURES))
+    assert f.shape == (B, 12, 8)
+    assert np.isnan(f[0, [6, 7]]).all()
+    assert np.isfinite(f[0, [0, 1, 2, 3, 4, 5, 8, 9, 10, 11]]).all() and np.isfinite(f[1:]).all()
 
 
 # 6. Corruption masks: severity exactly 0 on untouched leads

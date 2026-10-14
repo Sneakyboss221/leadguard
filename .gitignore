@@ -5,6 +5,7 @@ __pycache__/
 .ipynb_checkpoints/
 cache/*.npz
 checkpoints/*.pt
+checkpoints/*.pkl
 data/
 *.zip
 .DS_Store

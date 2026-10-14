@@ -34,6 +34,14 @@
 - Outputs: every model returns a dict with `logits` (raw head output: (B, 5) sigmoid, (B, 10) Beta-EDL) and `prob` (B, 5); LeadGuard adds `attn`, and the EDL head adds `alpha`, `beta`, `u`, `U`. The invariance tests compare `logits`.
 - EDL loss: summed over classes, averaged over the batch; KL weight = min(1, epoch / 10) with 0-based epochs.
 
+## Baselines (Step 4)
+- Parameter counts: mlp 6.21M, resnet 574k, transformer 310k, resnet_attn 526k, lg_hard / lg_soft 526k, lg_edl 527k.
+- `mlp`: dropout 0.3 after both hidden layers, GELU.
+- `resnet`: stem conv (12 -> 64 ch, k7, stride 2) + 4 residual stages (64, 64, 128, 128 ch, stride 2) + global average pool + linear to 128 + sigmoid head. Clean-trained (M3a) vs corruption-trained (M3b) is a training flag, not a different model.
+- `transformer`: the spec gives no depth, so it uses the same size as MALA for comparability (2 pre-norm layers, 4 heads, d = 128, FFN 256), learned positional embedding over the 40 patches, mean pooled.
+- `resnet_attn`: the LeadGuard encoder and attention code with q replaced by all ones (unmasked attention, mean pooling), so the only difference from `lg_soft` is the quality gating.
+- `xgb`: one binary XGBClassifier per class (500 trees max, depth 4, learning rate 0.05, subsample and colsample 0.8, early stopping 30 rounds on fold 9 AUROC). Saved as `checkpoints/xgb_s{seed}.pkl`. Writing predictions to `results/` happens in `evaluate.py` (Step 6), from `predict_xgb`'s `{"prob": (N, 5)}`, the same format as the neural models.
+
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
 - XGBoost "missing" leads are detected from the signal (lead std < 1e-6 → features NaN), never from true severity.
