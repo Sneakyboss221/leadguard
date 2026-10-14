@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+cache/*.npz
+checkpoints/*.pt
+data/
+*.zip
+.DS_Store
+Thumbs.db

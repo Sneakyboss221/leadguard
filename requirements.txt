@@ -1,0 +1,11 @@
+numpy
+pandas
+scipy
+scikit-learn
+xgboost
+wfdb
+matplotlib
+seaborn
+streamlit
+tqdm
+pytest
