@@ -27,6 +27,13 @@
 - Model selection on fold 9 (validation BCE); the agreement check is reported on fold 10 and saved to `results/sqa_agreement.csv` (so the number quoted in the paper comes from a CSV).
 - Gate accepted by the user: min over corruption types of `agreement_excl_band` > 0.95. All-leads and corrupted-leads-only agreement are reported alongside. On synthetic data, 40 epochs pass (0.967); the 2-epoch `--debug` run only checks that the script runs.
 
+## LeadGuard models (Step 3)
+- Lead encoder: stem conv (k7, stride 2, 32 ch) + 3 residual stages (32, 64, 128 ch, stride 2, k7) + global average pool + linear to 128. Parameters: encoder 260k, MALA 265k, total 527k (under ~1M).
+- MALA layers are pre-norm (LayerNorm before attention and FFN), FFN width 256, dropout 0.1 on the FFN and residual branches only (never on attention weights, so rows always sum to 1).
+- All-floored guard: the kept lead gets key bias 0 and pooling weight 1 (with q ~ 0 its q-weight would make the pooled vector ~0). In the hard variant the guard picks the lead with the highest *soft* q, because the 0/1 mask has ties.
+- Outputs: every model returns a dict with `logits` (raw head output: (B, 5) sigmoid, (B, 10) Beta-EDL) and `prob` (B, 5); LeadGuard adds `attn`, and the EDL head adds `alpha`, `beta`, `u`, `U`. The invariance tests compare `logits`.
+- EDL loss: summed over classes, averaged over the batch; KL weight = min(1, epoch / 10) with 0-based epochs.
+
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
 - XGBoost "missing" leads are detected from the signal (lead std < 1e-6 → features NaN), never from true severity.
