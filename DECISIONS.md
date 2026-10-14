@@ -63,6 +63,14 @@
 - Figures: 9 variants on the validated 8-hue categorical palette; the two ResNets share a hue and differ by line style (Fig. 1) or hatch (Fig. 3); every series also has a distinct marker. Shaded bands and error bars = std over seeds, only where there are 3 seeds. Fig. 4 shows risk-coverage for clean and `random_6` and the clean reliability diagram for lg_edl vs resnet (corruption-trained).
 - `table2.csv` (ablation M5-M8) columns: clean macro-AUROC, random loss k = 6 and k = 10 (mean over draws), precordial loss, clean ECE.
 
+## Demo (Step 7)
+- `make_demo_samples.py` picks 4 test-fold records per class (20 total) on which `resnet` (corruption-trained, seed 0) and `lg_edl` (seed 0) both get all 5 labels right at the validation-tuned thresholds with 12 clean leads. If fewer qualify, the remaining slots are filled with the records with the most correct labels, flagged `strict_correct = False`. With the 2-epoch synthetic debug models no record qualifies, so all 20 are fallbacks; this must be re-run on the real models.
+- `demo_samples/demo_config.json` holds the validation-fitted temperatures, F1 thresholds and the lg_edl U threshold, computed with the same functions as `evaluate.py`; the U threshold is cross-checked against `abstain_rate.csv` (matched: 0.6271).
+- Lead quality in the demo has two sources: the lead switches (q = 1 on, 0 off; the default) or "Auto-detect quality" (the frozen SQA on the current signal). Presets: Drop V1-V6, Drop limb, Random 6 off, EMG on 3 leads (10 dB, the test SNR), Reset.
+- EMG noise is generated on the z-scored signal and mapped back to mV with each lead's own mean and std, so the raw plot and the model input carry the same corruption. Disconnected leads are zero in both.
+- The baseline shown is temperature-scaled, like in `evaluate.py`; lg_edl uses its Beta probabilities.
+- Styling: theme pinned to light in `.streamlit/config.toml` (otherwise Streamlit follows the OS dark mode and the custom light panels lose contrast). Model hues match the paper figures; status red is used only for the abstain state; no green "correct" state, since the demo cannot know the model is right.
+
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
 - XGBoost "missing" leads are detected from the signal (lead std < 1e-6 → features NaN), never from true severity.
