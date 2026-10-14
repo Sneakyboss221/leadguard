@@ -22,6 +22,11 @@
 - **Clipping.** Threshold at a percentile of |x| per lead (uniform 70-95 unless given). Severity = clipped fraction / 0.2, capped at 1.
 - **Fixed test corruption.** Conditions: `clean`, `random_{k}` (3 draws = seeds 0-2), `group_{precordial|limb|v1_v3}`, `{emg|wander|clip}_{2|4|6}`; listed in `corrupt.TEST_CONDITIONS`. The generator is seeded from (seed, condition name) on CPU, so results do not depend on the device. It must be applied to the whole test set at once, not per batch.
 
+## SQA (Step 2)
+- "Global pool" is implemented as global average + global max pooling concatenated.
+- Model selection on fold 9 (validation BCE); the agreement check is reported on fold 10 and saved to `results/sqa_agreement.csv` (so the number quoted in the paper comes from a CSV).
+- Gate accepted by the user: min over corruption types of `agreement_excl_band` > 0.95. All-leads and corrupted-leads-only agreement are reported alongside. On synthetic data, 40 epochs pass (0.967); the 2-epoch `--debug` run only checks that the script runs.
+
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
 - XGBoost "missing" leads are detected from the signal (lead std < 1e-6 → features NaN), never from true severity.

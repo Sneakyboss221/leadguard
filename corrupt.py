@@ -198,7 +198,7 @@ def training_corruption(x: torch.Tensor, gen=None):
     # Guarantee >= 2 good leads: restore the least-corrupted leads of records that fell below.
     need = (sev < 0.5).sum(1) < 2
     if need.any():
-        order = sev.argsort(1, stable=True)[:, :2]
+        order = sev.argsort(dim=1, stable=True)[:, :2]
         restore = torch.zeros(b, 12, dtype=torch.bool, device=dev)
         restore.scatter_(1, order, True)
         restore &= need[:, None]
