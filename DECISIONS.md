@@ -42,6 +42,15 @@
 - `resnet_attn`: the LeadGuard encoder and attention code with q replaced by all ones (unmasked attention, mean pooling), so the only difference from `lg_soft` is the quality gating.
 - `xgb`: one binary XGBClassifier per class (500 trees max, depth 4, learning rate 0.05, subsample and colsample 0.8, early stopping 30 rounds on fold 9 AUROC). Saved as `checkpoints/xgb_s{seed}.pkl`. Writing predictions to `results/` happens in `evaluate.py` (Step 6), from `predict_xgb`'s `{"prob": (N, 5)}`, the same format as the neural models.
 
+## Training (Step 5)
+- Early stopping and best-checkpoint selection use macro-AUROC on the **clean** validation fold (fold 9). For SQA models, q on validation comes from the frozen SQA applied to the clean signal.
+- Checkpoints: `{model}_s{seed}_c{c}.pt` = best weights (what evaluation loads); `{model}_s{seed}_c{c}_last.pt` = full training state with a `finished` flag. Both are written every epoch via temp file + rename. "Final checkpoint exists" in `run_all.py` means `_last.pt` has `finished = True` and the best checkpoint exists.
+- Resume restores model, optimizer, scheduler, AMP scaler, early-stopping counter, history and all RNG states (python, numpy, torch, CUDA, the corruption generator). Verified: a run killed mid-epoch and resumed reproduces the uninterrupted run exactly (loss 3.6112, val macro-AUROC 0.6546 at epoch 2, lg_edl synthetic debug).
+- Safety: a checkpoint written under a different data / debug / epochs / batch / model / seed / corrupt-train setting makes `train.py` and `run_all.py` stop with an error instead of resuming or skipping; the SQA checkpoint must come from the same dataset. An unreadable `_last.pt` is renamed `*.unreadable` and the run restarts. The XGBoost checkpoint `xgb_s{seed}.pkl` stores data/debug too.
+- `run_all.py` runs each job as its own process, checks every run (and the SQA) before starting, appends one row per invocation to `timing.csv` (a resumed run gets a second row with `resumed = True`; total time = sum of rows), and stops at the first failure.
+- `--debug` uses 2 epochs. `train.py` accepts `--out-dir` for interface consistency; it writes nothing there (results come from `evaluate.py`).
+- No gradient clipping (not in the spec). The loss is checked every step and training stops on NaN/inf.
+
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
 - XGBoost "missing" leads are detected from the signal (lead std < 1e-6 → features NaN), never from true severity.

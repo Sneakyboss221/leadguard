@@ -9,6 +9,7 @@ predict_xgb returns {"prob": (N, 5)}, the same key and shape as the neural model
 from __future__ import annotations
 
 import argparse
+import os
 import pickle
 import time
 from pathlib import Path
@@ -59,19 +60,20 @@ def predict_xgb(models: list[XGBClassifier], x: np.ndarray) -> dict:
     return {"prob": np.stack([m.predict_proba(f)[:, 1] for m in models], axis=1).astype(np.float32)}
 
 
-def save_xgb(models: list[XGBClassifier], path: Path) -> None:
+def save_xgb(models: list[XGBClassifier], path: Path, meta: dict) -> None:
+    """Atomic write (temp file + rename). meta records the data setting, e.g. {"data": ..., "debug": ...}."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "wb") as fh:
-        pickle.dump(models, fh)
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "wb") as fh:
+        pickle.dump({"models": models, **meta}, fh)
+    os.replace(tmp, path)
 
 
-def load_xgb(path: Path) -> list[XGBClassifier]:
+def load_xgb(path: Path) -> tuple[list[XGBClassifier], dict]:
+    """Returns (models, meta)."""
     with open(path, "rb") as fh:
-        return pickle.load(fh)
-
-
-def macro_auroc(y: np.ndarray, prob: np.ndarray) -> float:
-    return float(np.mean([roc_auc_score(y[:, k], prob[:, k]) for k in range(y.shape[1])]))
+        d = pickle.load(fh)
+    return d.pop("models"), d
 
 
 def main() -> None:
@@ -102,7 +104,7 @@ def main() -> None:
     print(f"NaN fraction of features with V1-V6 zeroed: {nan_frac:.2f} (expected 0.50)")
 
     path = Path(a.ckpt_dir) / f"xgb_s{a.seed}.pkl"
-    save_xgb(models, path)
+    save_xgb(models, path, {"data": a.data, "debug": a.debug, "seed": a.seed})
     print(f"saved {path}")
 
 
