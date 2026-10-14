@@ -51,6 +51,18 @@
 - `--debug` uses 2 epochs. `train.py` accepts `--out-dir` for interface consistency; it writes nothing there (results come from `evaluate.py`).
 - No gradient clipping (not in the spec). The loss is checked every step and training stops on NaN/inf.
 
+## Evaluation and figures (Step 6)
+- Conditions: `clean` plus the 30 entries of `corrupt.TEST_CONDITIONS` (`random_0` equals clean and gives the k = 0 point). Each condition corrupts the whole test fold once on CPU; every model sees the same tensor. SQA models are evaluated with estimated q and oracle q = 1 - severity; all other CSVs use estimated q.
+- Fitted on clean validation (fold 9) predictions, never on test: one temperature per model for every model except `lg_edl` (XGBoost included, since its outputs are sigmoids of a margin), searched in [e^-3, e^3] with a warning at the bound; per-class F1 thresholds on the temperature-scaled probabilities (grid 0.01-0.99); and the `lg_edl` U threshold.
+- **Abstain threshold (spec says only "tuned on the validation fold"):** the 95th percentile of U on clean validation, i.e. 5% abstention on clean validation data. Stored in `abstain_rate.csv` (`u_threshold`) for the demo.
+- ECE: 15 equal-width bins over the positive-class probability of all N x 5 predictions (flattened). Reliability bins for the clean condition go to `calibration.csv`.
+- Risk-coverage at 20 coverage levels (0.05-1.00); ties in uncertainty keep record order (stable sort). Scores: `edl_U` (lg_edl only) and `sigmoid_style` for every model, including lg_edl for the like-for-like check.
+- `abstain_rate.csv` reports the combined rule and each part separately (U above threshold, sum q < 3), plus mean U and mean sum q per condition, so the relation between uncertainty and lead loss is measured, not assumed.
+- Paired bootstrap (extra file `bootstrap_ci.csv`; the spec asks for the CI but lists no file): difference in macro-AUROC, `lg_edl` minus `resnet` corruption-trained, each side averaged over its 3 seeds, on the same resampled test records; 1000 resamples (100 with `--debug`), percentile 95% CI, every condition.
+- `attention.npz`: first `lg_edl` run, estimated q, last-layer attention averaged over heads and test records, for clean / V1 zeroed / II zeroed.
+- Figures: 9 variants on the validated 8-hue categorical palette; the two ResNets share a hue and differ by line style (Fig. 1) or hatch (Fig. 3); every series also has a distinct marker. Shaded bands and error bars = std over seeds, only where there are 3 seeds. Fig. 4 shows risk-coverage for clean and `random_6` and the clean reliability diagram for lg_edl vs resnet (corruption-trained).
+- `table2.csv` (ablation M5-M8) columns: clean macro-AUROC, random loss k = 6 and k = 10 (mean over draws), precordial loss, clean ECE.
+
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
 - XGBoost "missing" leads are detected from the signal (lead std < 1e-6 → features NaN), never from true severity.
