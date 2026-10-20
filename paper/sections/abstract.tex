@@ -1,3 +1,18 @@
 \begin{abstract}
-\todo{Abstract: written last, from the finished Results.}
+Twelve-lead ECG classifiers are trained on complete recordings but deployed where electrodes detach, flatline or
+pick up noise. Two remedies are often proposed alongside training on corrupted inputs: gating attention by an
+estimate of each lead's quality, and abstaining when an evidential uncertainty is high. We separate these
+ingredients in a controlled ablation on PTB-XL (\nRecordsKept{} records, five diagnostic superclasses). A frozen
+signal-quality assessor scores every lead, a mask-aware lead attention uses the scores, and a per-class
+Beta-evidential head decides when to abstain. We compare this system, three ablations and five baselines on 31
+deterministic test conditions of simulated lead removal and artifacts, with oracle-quality controls and paired
+bootstrap intervals. Training with simulated lead failure provided most of the robustness: the same ResNet gained
+\gainDropKTen{} macro-AUROC with ten of twelve leads missing, at no cost on complete recordings. Neither hard nor
+soft quality gating improved on un-gated lead attention, and the full system was never significantly better than
+a corruption-trained ResNet in \bootNRows{} paired comparisons, while significantly worse in \bootNSigNeg{}
+artifact conditions. The evidential uncertainty matched a plain confidence score in selective prediction and did
+not rise as leads disappeared (mean \meanUKZero{} with all leads, \meanUKTen{} with two) while macro-AUROC fell
+from \aucLgEdlKZero{} to \aucLgEdlKTen: an illusion of certainty. All abstention under lead loss came from a simple
+rule that counts usable leads. For lead failure, data augmentation rather than architecture does the work, and a
+learned uncertainty must be validated under the very failures it is meant to detect.
 \end{abstract}
