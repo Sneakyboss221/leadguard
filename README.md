@@ -20,7 +20,8 @@ pick up muscle noise, baseline wander or clipping. Several recent architectures 
 score per lead, attention over leads, and an uncertainty estimate that lets the model abstain.
 
 This project asks whether those components help **once the baseline is also trained on simulated lead
-failures**, which is the comparison most papers leave out.
+failures**. Without that baseline, any gain could come from the training data
+rather than from the architecture.
 
 ## What was tested
 
@@ -30,18 +31,21 @@ same corrupted signals.
 
 ![The simulated failure types on one test record](assets/corruptions.png)
 
-The full system, **LG-EDL**, has four parts:
+The full system, **LG-EDL**, works like this:
 
 ```mermaid
 flowchart LR
-    X["12-lead ECG<br/>10 s, 100 Hz"] --> Q["Signal-quality assessor<br/>per-lead score q in [0,1]<br/>(frozen, 47k params)"]
-    X --> E["Per-lead ResNet encoder<br/>(shared weights)"]
-    Q --> A
-    E --> A["Lead attention<br/>key bias log q"]
-    A --> P["Quality-weighted<br/>pooling"]
-    P --> H["Beta-evidential head<br/>probability + uncertainty U<br/>for each of 5 classes"]
-    H --> D{"Abstain if<br/>U > τ or Σq < 3"}
+    X["12-lead ECG"] --> Q["Quality score q<br/>per lead"]
+    X --> E["Per-lead<br/>encoder"]
+    Q --> A["Lead attention<br/>biased by log q"]
+    E --> A
+    A --> H["Evidential head<br/>probability + U"]
+    H --> D["Answer, or abstain<br/>if U > τ or Σq < 3"]
 ```
+
+The quality scorer is a small CNN (47k parameters) trained separately and then frozen. The attention gives each
+lead a weight that shrinks with its quality score, and the head outputs, for each of the five classes, a
+probability and an uncertainty U. The threshold τ is the 95th percentile of U on clean validation data.
 
 It is compared with three ablations (hard gating, soft gating, attention without gating) and five baselines
 (ResNet trained on clean data, the same ResNet trained with simulated failures, a patch Transformer, an MLP and
