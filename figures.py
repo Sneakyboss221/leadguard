@@ -49,8 +49,12 @@ def per_seed(df: pd.DataFrame, by: list[str], value: str) -> pd.DataFrame:
     return pd.DataFrame({"mean": g.mean(), "std": g.std(ddof=1), "n_seeds": g.size()}).reset_index()
 
 
+PAPER_MODE = False  # True: leave out the "Figure N." titles, the LaTeX captions replace them
+
+
 def _style(ax, title: str, xlabel: str, ylabel: str) -> None:
-    ax.set_title(title, fontsize=11, color=TEXT, loc="left")
+    if not (PAPER_MODE and title.startswith("Figure")):
+        ax.set_title(title, fontsize=11, color=TEXT, loc="left")
     ax.set_xlabel(xlabel, color=MUTED)
     ax.set_ylabel(ylabel, color=MUTED)
     ax.grid(True, color=GRID, lw=0.6)
@@ -104,7 +108,7 @@ def fig2(res: Path, out: Path) -> None:
         ax.set_ylabel("query lead", color=MUTED)
         ax.set_title(n, fontsize=11, color=TEXT)
     fig.colorbar(im, ax=axes, shrink=0.8, label="attention weight")
-    fig.suptitle(f"Figure 2. {d['run']} attention (last layer, mean over heads and test records)",
+    PAPER_MODE or fig.suptitle(f"Figure 2. {d['run']} attention (last layer, mean over heads and test records)",
                  fontsize=11, color=TEXT)
     fig.savefig(out / "fig2_attention.png", dpi=DPI)
     plt.close(fig)
@@ -180,7 +184,7 @@ def fig4(res: Path, out: Path) -> None:
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.legend(fontsize=8, frameon=False, loc="upper left")
-    fig.suptitle("Figure 4. Selective prediction and calibration on the test fold", fontsize=11, color=TEXT, x=0.01,
+    PAPER_MODE or fig.suptitle("Figure 4. Selective prediction and calibration on the test fold", fontsize=11, color=TEXT, x=0.01,
                  ha="left")
     fig.tight_layout()
     fig.savefig(out / "fig4_risk_coverage_calibration.png", dpi=DPI)

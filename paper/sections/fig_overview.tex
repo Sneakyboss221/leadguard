@@ -1,0 +1,49 @@
+% Fig. 1: overview of the evaluated pipeline (drawn in TikZ; no data in this figure).
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+    font=\footnotesize,
+    >={Stealth[length=5pt]},
+    box/.style={draw=inkgray, rounded corners=2pt, align=center, inner sep=3pt, minimum height=1.25cm, fill=white},
+    lg/.style={box, draw=lgblue, fill=lgblue!7, line width=0.6pt},
+    fail/.style={box, draw=failred, fill=failred!6},
+    note/.style={font=\scriptsize, text=inkgray, align=center},
+    flow/.style={->, draw=inkgray, line width=0.6pt},
+    qflow/.style={->, draw=lgblue, line width=0.6pt, dashed},
+    node distance=0.36cm,
+  ]
+  \node[box, text width=1.7cm] (ecg) {\textbf{12-lead ECG}\\ $12\times1000$ samples\\ 10\,s at 100\,Hz};
+  \node[fail, right=of ecg, text width=2.0cm] (fail) {\textbf{Lead failure}\\ (simulated)\\ unplug, flatline,\\ EMG, wander, clip};
+  \node[box, right=of fail, text width=2.2cm] (enc) {\textbf{Per-lead encoder}\\ shared ResNet-1D\\ + lead embedding\\ $\mathbf{h}_j\in\mathbb{R}^{128}$};
+  \node[lg, right=of enc, text width=2.45cm] (mala) {\textbf{Lead attention}\\ 2 layers, 4 heads\\ key bias $\log q_j$\\ masked if $q_j<0.02$};
+  \node[lg, right=of mala, text width=1.65cm] (pool) {\textbf{Pooling}\\ weighted by $q_j$\\ $\rightarrow\ \mathbf{z}$};
+  \node[lg, right=of pool, text width=2.0cm] (head) {\textbf{Evidential head}\\ Beta$(\alpha_k,\beta_k)$\\ per class $\rightarrow$\\ $p_k$ and $U$};
+  \node[box, right=of head, text width=1.75cm, draw=failred, line width=0.6pt] (abst) {\textbf{Abstain} if\\ $U>\tau$ or $\sum_j q_j<3$\\ else 5 labels};
+
+  \node[lg, above=0.6cm of mala, text width=5.2cm, minimum height=0.75cm] (sqa)
+       {\textbf{Signal quality assessor} (frozen per-lead CNN):\\ reliability $q_j\in[0,1]$ for every lead};
+
+  \draw[flow] (ecg) -- (fail);
+  \draw[flow] (fail) -- (enc);
+  \draw[flow] (enc) -- (mala);
+  \draw[flow] (mala) -- (pool);
+  \draw[flow] (pool) -- (head);
+  \draw[flow] (head) -- (abst);
+  \draw[flow] (fail.north) |- (sqa.west);
+  \draw[qflow] (sqa.south) -- (mala.north);
+  \draw[qflow] (sqa.east) -| (pool.north);
+  \draw[qflow] (sqa.east) -| (abst.north);
+
+  \node[note, below=0.3cm of mala, text width=5.4cm] (abl)
+       {\textbf{Ablation:} un-gated ($q\equiv1$), hard ($\mathbf{1}[q\ge0.5]$) or soft ($q$) gating;
+        sigmoid or evidential head};
+  \draw[densely dotted, draw=inkgray] (abl.north) -- (mala.south);
+  \node[note, below=0.3cm of fail, text width=4.2cm, xshift=1.2cm]
+       {\textbf{Baselines} receive the same corrupted ECG (removed leads set to zero) and ignore $q$};
+\end{tikzpicture}
+\caption{The evaluated pipeline. Leads fail by simulation, in training and at test time. A frozen quality assessor
+scores every lead; its score $q_j$ biases the lead-attention keys, weights the pooling, and drives one of the two
+abstention rules. The ablation (bottom) removes the gating or swaps the evidential head for a sigmoid head; the
+baselines receive the same corrupted ECG, with removed leads set to zero.}
+\label{fig:overview}
+\end{figure*}

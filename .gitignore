@@ -10,3 +10,7 @@ data/
 *.zip
 .DS_Store
 Thumbs.db
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.pdf

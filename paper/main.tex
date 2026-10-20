@@ -1,0 +1,75 @@
+% LeadGuard paper. Compile with pdflatex (twice) + bibtex; Overleaf: upload the whole paper/ folder, main document main.tex.
+% Every number comes from generated/numbers.tex and generated/tab_*.tex, written by make_numbers.py from results/*.csv.
+\documentclass[journal]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{adjustbox}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{microtype}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+\input{generated/numbers.tex}
+\input{generated/vignette.tex}
+\input{facts.tex}
+
+% Palette shared with the figures and the demo: LeadGuard blue, baseline orange, failure red.
+\definecolor{lgblue}{HTML}{2A6FCA}
+\definecolor{baseorange}{HTML}{D9622B}
+\definecolor{failred}{HTML}{B3263A}
+\definecolor{inkgray}{HTML}{44454A}
+\definecolor{panelgray}{HTML}{F3F2EE}
+
+% Boxed summaries (key findings, practical recommendations).
+\newtcolorbox{keybox}[1]{enhanced, breakable, colback=panelgray, colframe=inkgray, boxrule=0.4pt, arc=1.5pt,
+  left=5pt, right=5pt, top=4pt, bottom=4pt, fonttitle=\bfseries\small, coltitle=black, colbacktitle=panelgray,
+  title={#1}, attach title to upper={\par\smallskip}, fontupper=\small}
+
+% Drafting markers: visible in red so nothing unfinished can slip into the final PDF unnoticed.
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\citeneeded}[1]{\textcolor{red}{[CITE: #1]}}
+
+\begin{document}
+
+\title{Do Quality Gating and Evidential Abstention Help ECG Classifiers Survive Lead Failure?
+A Controlled Ablation on PTB-XL}
+
+\author{\todo{Author name}% <-this % stops a space
+\thanks{\todo{Affiliation, e-mail.} Code, results and the interactive demo are available at \todo{repository URL}.}}
+
+\markboth{\todo{Course / venue}}{Quality Gating and Evidential Abstention under ECG Lead Failure}
+
+\maketitle
+
+\input{sections/abstract}
+
+\begin{IEEEkeywords}
+Electrocardiography, missing leads, signal quality, attention, evidential deep learning, selective prediction,
+robustness, PTB-XL.
+\end{IEEEkeywords}
+
+\input{sections/keyfindings}
+\input{sections/introduction}
+\input{sections/related}
+\input{sections/data}
+\input{sections/method}
+\input{sections/setup}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/limitations}
+\input{sections/conclusion}
+
+% References are added only after each one has been checked against its primary source.
+% \bibliographystyle{IEEEtran}
+% \bibliography{refs}
+
+\end{document}

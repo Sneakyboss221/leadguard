@@ -1,0 +1,56 @@
+\section{Introduction}
+\label{sec:introduction}
+\input{sections/fig_overview}
+
+\IEEEPARstart{T}{he} twelve-lead electrocardiogram (ECG) is the workhorse of cardiac diagnosis: ten electrodes,
+twelve views of the heart's electrical activity, ten seconds of signal \citeneeded{ECG textbook or guideline on
+the standard 12-lead ECG}. That picture assumes every electrode stays where it was placed. In emergency
+departments, ambulances and intensive-care units it often does not. Electrodes peel away from sweating skin,
+cables are tugged during transfers, muscle tremor buries the signal in noise, and leads end up swapped or
+disconnected altogether \citeneeded{clinical studies on lead misplacement, detachment and artifact in acute
+care}. The recording that reaches an automated classifier is frequently not the recording its training data
+promised.
+
+Deep networks trained on complete twelve-lead ECGs now rival cardiologists on curated benchmarks
+\citeneeded{PTB-XL benchmark (Strodthoff et al.) and large-scale ECG DL studies}. Their failure mode under
+missing or corrupted leads is less reassuring: a convolutional network has no built-in notion that a channel has
+gone flat, so it simply produces a diagnosis from whatever it receives, and nothing in its output tells the
+clinician that half of the recording was missing. Two families of remedies have been proposed. The first adds
+\emph{spatial structure}: treat the leads as tokens, estimate each lead's quality and let attention ignore the
+unreliable ones \citeneeded{lead-attention / missing-lead / masked-attention ECG works}. The second adds
+\emph{uncertainty}: replace the softmax or sigmoid output by an evidential head that reports how much evidence
+supports each prediction, so the system can abstain when it does not know \citeneeded{Sensoy et al.\ 2018 and
+evidential ECG works}. Both are appealing, and both are usually evaluated as part of a larger system, next to a
+change that may matter more: training on corrupted inputs.
+
+We set out to test these mechanisms one at a time. We built a carefully controlled pipeline that combines both
+(Fig.~\ref{fig:overview}): a frozen signal-quality assessor scores every lead, a mask-aware lead attention uses
+those scores to suppress unreliable leads, and a per-class Beta-evidential head decides when to abstain. We then
+trained nine model variants (the full system, three ablations and five baselines), all neural models under one
+shared training budget, and evaluated them on identical, deterministically corrupted copies of the PTB-XL test
+fold, with paired bootstrap intervals and oracle controls.
+
+The outcome was not the one the architecture was designed for. Training with simulated lead failure, a simple
+data augmentation, recovered most of the robustness that the clean-trained network lost; the quality gating and
+the evidential head added nothing measurable on top. More strikingly, the evidential uncertainty did not respond
+to the failures at all. As leads were removed, accuracy fell steadily while the model's reported uncertainty
+stayed flat, so the network looked exactly as sure of a two-lead recording as of a complete one. We call this an
+\emph{illusion of certainty}, and it is the main warning of this paper: an uncertainty estimate that is
+well-behaved on clean data can be blind to the very failure it is meant to flag.
+
+Concretely, our contributions are three controlled empirical findings on PTB-XL:
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item \textbf{Training with lead failure does the heavy lifting.} The same ResNet gains \gainDropKTen{}
+        macro-AUROC with ten of twelve leads missing when trained on simulated failures, with no cost on complete
+        recordings (Section~\ref{sec:res-dropout}).
+  \item \textbf{Quality gating adds no measurable benefit.} Hard and soft gating by a learned per-lead quality
+        score do not improve on un-gated lead attention, and the full system is never significantly better than a
+        corruption-trained ResNet across \bootNRows{} paired comparisons; it is worse under baseline wander and
+        heavy muscle noise (Section~\ref{sec:res-gating}).
+  \item \textbf{Evidential uncertainty creates an illusion of certainty.} It gives the same selective-prediction
+        risk as a plain confidence score, does not rise as leads disappear (\meanUKZero{} with all leads,
+        \meanUKTen{} with two), and every abstention under lead loss comes from simply counting usable leads
+        (Section~\ref{sec:res-edl}).
+\end{itemize}
+Code, trained models, all result tables and an interactive demonstration are released with the paper; every number
+in the text is generated directly from the released result files.
