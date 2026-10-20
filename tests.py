@@ -1,5 +1,6 @@
 """SPEC section 5, tests 1-8. Nothing trains until these pass: python -m pytest -q tests.py
 (Test 9, the SQA accuracy check, runs on real data via pretrain_sqa.py.)
+Also checks the evaluation helpers (risk-coverage, temperature, thresholds) and the checkpoint resume guard.
 """
 from __future__ import annotations
 

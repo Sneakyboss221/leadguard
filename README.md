@@ -5,7 +5,7 @@ A controlled ablation on PTB-XL, with code, results, paper and an offline demo.
 
 [![tests](https://github.com/Sneakyboss221/leadguard/actions/workflows/ci.yml/badge.svg)](https://github.com/Sneakyboss221/leadguard/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)
+![python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 
 [Paper source](paper/) · [Trained models and PDF (v1.0 release)](https://github.com/Sneakyboss221/leadguard/releases/tag/v1.0) · [Specification](SPEC.md) · [Design decisions](DECISIONS.md)
 
@@ -95,7 +95,7 @@ table above is the evidence.
 
 ## Running it
 
-Install (Python 3.11, CPU is enough for everything except full PTB-XL training):
+Install (Python 3.11 or newer; tested on 3.11 and 3.14. CPU is enough for everything except full PTB-XL training):
 
 ```bash
 python -m venv .venv

@@ -583,7 +583,7 @@ function renderResults(r) {
         : `its uncertainty ${x.value.toFixed(3)} is above the limit ${x.limit.toFixed(3)}`).join("; and "))}.</div>`
     : "";
   modelCard($("#mBase"), "base", S.baseline === "resnet_c1" ? "Baseline · broken-lead training" : "Baseline · clean training", "ResNet", r.base, r.truth, false);
-  modelCard($("#mLg"), "lg", "Proposed · broken-lead training", "LeadGuard", r.lg, r.truth, r.abstain);
+  modelCard($("#mLg"), "lg", "Quality-gated · broken-lead training", "LeadGuard", r.lg, r.truth, r.abstain);
   $("#legBase").textContent = "ResNet";
 
   $("#probs").innerHTML = META.classes.map((c, k) => {
