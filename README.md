@@ -1,6 +1,44 @@
-# LeadGuard: robust ECG classification under lead failure
+# LeadGuard: do quality gating and evidential abstention help ECG classifiers survive lead failure?
 
-Course project. Architecture and rules: `SPEC.md`. Agent rules: `AGENTS.md`. Build order: `PROMPTS.md`. Human walkthrough, including the Colab run: `GUIDE.md`. Every interpretation of or deviation from the spec: `DECISIONS.md`.
+Code, results, paper and interactive demo for a controlled ablation on PTB-XL. A frozen signal-quality assessor
+scores every lead, a mask-aware lead attention uses those scores, and a per-class Beta-evidential head decides
+when to abstain. The study compares this system with three ablations and five baselines under simulated lead
+failure. In short:
+
+- **Training with simulated lead failure does the heavy lifting**: +0.187 macro-AUROC for the same ResNet with
+  ten of twelve leads missing, at no cost on complete recordings.
+- **Quality gating adds no measurable benefit** over un-gated lead attention.
+- **Evidential uncertainty shows an illusion of certainty**: it stays flat as leads disappear while accuracy
+  falls; all abstention under lead loss comes from counting usable leads.
+
+All numbers come from `results/*.csv`; the paper (`paper/`) is generated from them.
+
+## Try the demo (CPU, offline)
+
+1. Install the environment (see Quick start below).
+2. Download `leadguard_checkpoints_v1.zip` from the
+   [v1.0 release](https://github.com/Sneakyboss221/leadguard/releases/tag/v1.0) and unzip it in the repository
+   folder, so that the files land in `checkpoints/`.
+3. Run `python app.py`; the page opens in your browser.
+
+## Rebuild the paper
+
+```
+python paper/make_numbers.py     # numbers, tables and figures from results/*.csv
+python paper/make_vignette.py    # the illustrative case (needs the checkpoints)
+```
+Then compile `paper/main.tex` with pdflatex and bibtex (or upload `paper/` to Overleaf).
+
+## Data
+
+PTB-XL v1.0.3 (Wagner et al., Scientific Data 2020, doi:10.1038/s41597-020-0495-6; PhysioNet,
+doi:10.13026/kfzx-aw45). The raw data are not included; download them from PhysioNet under its terms.
+`demo_samples/` contains 20 test-fold records derived from PTB-XL.
+
+## Development notes
+
+Architecture and rules: `SPEC.md`. Coding-agent rules: `AGENTS.md`. Build order: `PROMPTS.md`. Walkthrough,
+including the Colab run: `GUIDE.md`. Every interpretation of or deviation from the spec: `DECISIONS.md`.
 
 ## Quick start (local, CPU, synthetic data)
 
