@@ -1,0 +1,49 @@
+{
+  "data": "ptbxl",
+  "debug": false,
+  "u_quantile": 0.95,
+  "abstain_q_sum": 3.0,
+  "classes": [
+    "NORM",
+    "MI",
+    "STTC",
+    "CD",
+    "HYP"
+  ],
+  "runs": {
+    "resnet_c0": {
+      "run": "resnet_s0_c0",
+      "temperature": 1.5948051691758416,
+      "thresholds": [
+        0.42,
+        0.44,
+        0.41,
+        0.26,
+        0.19
+      ]
+    },
+    "resnet_c1": {
+      "run": "resnet_s0_c1",
+      "temperature": 1.2166645546768675,
+      "thresholds": [
+        0.58,
+        0.43,
+        0.3,
+        0.28,
+        0.22
+      ]
+    },
+    "lg_edl": {
+      "run": "lg_edl_s0_c1",
+      "temperature": 1.0,
+      "thresholds": [
+        0.48,
+        0.41,
+        0.37,
+        0.44,
+        0.3
+      ],
+      "u_threshold": 0.48624783754348755
+    }
+  }
+}

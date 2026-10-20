@@ -1,0 +1,15 @@
+run,model,seed,corrupt_train,status,resumed,seconds,device,data,debug,finished_at
+resnet_s0_c1,resnet,0,1,ok,False,34.7,cuda,ptbxl,False,2026-10-14T16:44:31
+lg_edl_s0_c1,lg_edl,0,1,ok,False,200.3,cuda,ptbxl,False,2026-10-14T16:47:51
+xgb_s0,xgb,0,n/a,ok,False,65.8,cuda,ptbxl,False,2026-10-14T16:51:46
+mlp_s0_c1,mlp,0,1,ok,False,43.3,cuda,ptbxl,False,2026-10-14T16:52:29
+resnet_s0_c0,resnet,0,0,ok,False,34.2,cuda,ptbxl,False,2026-10-14T16:53:03
+resnet_s1_c1,resnet,1,1,ok,False,35.4,cuda,ptbxl,False,2026-10-14T16:53:39
+resnet_s2_c1,resnet,2,1,ok,False,42.0,cuda,ptbxl,False,2026-10-14T16:54:21
+transformer_s0_c1,transformer,0,1,ok,False,37.4,cuda,ptbxl,False,2026-10-14T16:54:58
+resnet_attn_s0_c1,resnet_attn,0,1,ok,False,169.3,cuda,ptbxl,False,2026-10-14T16:57:48
+lg_hard_s0_c1,lg_hard,0,1,ok,False,200.0,cuda,ptbxl,False,2026-10-14T17:01:08
+lg_soft_s0_c1,lg_soft,0,1,ok,False,199.3,cuda,ptbxl,False,2026-10-14T17:04:27
+lg_edl_s1_c1,lg_edl,1,1,ok,False,200.6,cuda,ptbxl,False,2026-10-14T17:07:48
+lg_edl_s2_c1,lg_edl,2,1,ok,False,200.5,cuda,ptbxl,False,2026-10-14T17:11:08
+lg_soft_s0_c1,lg_soft,0,1,ok,True,41.4,cuda,ptbxl,False,2026-10-15T00:12:29

@@ -1,4 +1,4 @@
-﻿"""Run the lean run list (SPEC section 4) one after another.
+"""Run the lean run list (SPEC section 4) one after another.
 
 Before each run its final checkpoint is checked: finished runs are skipped, unfinished ones resume (train.py
 picks up its _last.pt), new ones start. Each run executes as its own process; its wall-clock time is

@@ -72,10 +72,14 @@
 - Styling: theme pinned to light in `.streamlit/config.toml` (otherwise Streamlit follows the OS dark mode and the custom light panels lose contrast). Model hues match the paper figures; status red is used only for the abstain state; no green "correct" state, since the demo cannot know the model is right.
 
 ## Freeze review (Step 8)
-- Approved by the user: per-record training corruption (D3), the 95th-percentile abstain threshold (D7), and the EDL loss formulation (D15). The EDL loss still has to be checked against the text of Sensoy et al. 2018 before it is cited.
+- Approved by the user: per-record training corruption (D3), the 95th-percentile abstain threshold (D7), and the EDL loss formulation (D15). The EDL loss was later checked against the text of Sensoy et al. 2018 (see "After the real run").
 - Added after the review: `--cache-dir` on every script that loads data (passed through by `run_all.py`); `evaluate.py --strict` (stop unless all 13 runs are finished); `run_all.py --only RUN ...` (run a subset of the run list, still logging `timing.csv`), used by `GUIDE.md` 9.4 for the first two real runs.
 - `GUIDE.md` section 9 now starts with a synthetic smoke test on the Colab GPU (the laptop never executed the CUDA / mixed-precision paths), sends every output to explicit Drive folders, and builds the demo samples on Colab.
 - All synthetic outputs (results, figures including the step-1 corruption figure, demo samples, checkpoints) were deleted before the real run; regenerate the corruption figure with `plot_corruptions.py --data ptbxl`.
+
+## After the real run
+- **EDL loss checked against Sensoy et al. 2018** (arXiv 1806.01768, read via ar5iv). `edl_loss` is their Eq. 4 (Bayes risk of cross-entropy, `sum_j y_j (psi(S) - psi(alpha_j))`) applied per class as a two-outcome Dirichlet, i.e. Beta(alpha_k, beta_k). The KL target matches their alpha-tilde = y + (1 - y) * alpha (y_k = 1 -> Beta(1, beta_k); y_k = 0 -> Beta(alpha_k, 1)), the closed-form KL to Beta(1, 1) matches their Dirichlet formula with K = 2, and the weight min(1, t / 10) matches their lambda_t. Numerically, the closed-form KL and expected BCE agree with direct integration under Beta(alpha, beta) to within 2e-11. Wording for the paper: Sensoy et al. used the squared-error variant (their Eq. 5) in their own experiments; we use the cross-entropy variant (Eq. 4), per class (Beta instead of Dirichlet, for multi-label).
+- **timing.csv has two rows for `lg_soft_s0_c1`.** The second (15 Oct, `resumed = True`, 41.4 s) is a resume from a `_last.pt` that was not marked finished on Drive (most likely a write not flushed before the runtime ended). Resume restores the full training state, so the run is equivalent to an uninterrupted one; its final `_last.pt` shows 15 epochs. Total time for that run = sum of both rows.
 
 ## Models and evaluation (decided now, implemented later)
 - The "under ~1M parameters" limit applies to the LeadGuard and attention encoders. The MLP baseline (12000-512-128-5, ~6.2M) is exempt because the spec fixes its size.
