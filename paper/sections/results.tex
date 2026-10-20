@@ -1,78 +1,49 @@
 \section{Results}
 \label{sec:results}
 
-All results are on the PTB-XL test fold (fold~10, \nTestRecords{} records). Every model sees the identical
-corrupted test tensor for each condition (Section~\ref{sec:data}). Values for LG-EDL and the corruption-trained
-ResNet are mean\,$\pm$\,standard deviation over three training seeds; all other variants were trained once and
-are labelled \emph{single seed}. For random lead removal, each value is first averaged over the three random draws
-of that condition. Paired bootstrap intervals compare LG-EDL with the corruption-trained ResNet on the same
-resampled test records (\bootNBoot{} resamples; each side averaged over its three seeds).
+All results are on the PTB-XL test fold (fold~10, \nTestRecords{} records), and all models receive the same corrupted
+test data for each condition. Values for LG-EDL and the corruption-trained ResNet are mean\,$\pm$\,standard deviation
+over three seeds; the other variants were trained once. For random lead removal, each value is first averaged over
+the three draws of that condition.
 
 % ---------------------------------------------------------------------------------------------------------------
-\subsection{An illustrative case}
-\label{sec:res-case}
-
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{fig_vignette.pdf}
-\caption{One test patient, before and after the chest leads are unplugged. (a) The raw 12-lead recording; V1--V6
-(grey) are removed in (c). (b, c) Class probabilities of the corruption-trained ResNet and of LG-EDL; ticks mark
-each model's validation-tuned decision threshold. Lead quality comes from the frozen assessor. \emph{This case was
-selected} from records that both models classify correctly with all leads; it illustrates the behaviour, it does
-not measure how often it occurs (see Tables~\ref{tab:random}--\ref{tab:bootstrap}).}
-\label{fig:vignette}
-\end{figure*}
-
-Fig.~\ref{fig:vignette} follows a single test patient, \vigPatient, whose recording carries one label, myocardial
-infarction (MI). With all twelve leads, both models are right: the corruption-trained ResNet gives MI a probability
-of \vigBaseMiFull{} and LG-EDL \vigLgMiFull. When the six chest leads are unplugged, the ResNet still detects the
-infarction (\vigBaseMiCut), but its probability for ST/T change rises from \vigBaseStFull{} to \vigBaseStCut, past
-its decision threshold of \vigBaseStThr, and it reports a second, false diagnosis. LG-EDL keeps a single, correct
-label (MI \vigLgMiCut). Its uncertainty, however, hardly moves ($U$ from \vigLgUFull{} to \vigLgUCut) even though
-half of the recording is gone, a first hint of the pattern quantified in Section~\ref{sec:res-edl}. Whether such
-cases favour one model on average is the question the rest of this section answers; the short answer is that they
-do not.
-
-% ---------------------------------------------------------------------------------------------------------------
-\subsection{Clean test performance}
+\subsection{Clean Test Performance}
 \label{sec:res-clean}
 
 \begin{table}[t]
 \centering
-\caption{Clean test performance. Mean\,$\pm$\,std over seeds where three seeds were trained; otherwise a single
-run. ECE: expected calibration error over all $N\times5$ binary predictions (15 bins); sigmoid models are
-temperature-scaled on the validation fold, LG-EDL is not.}
+\caption{Clean test performance. Mean\,$\pm$\,standard deviation over three seeds where available, otherwise one
+run. ECE: expected calibration error over all $N\times5$ binary predictions (15 bins). All models except LG-EDL are
+temperature-scaled on the validation fold.}
 \label{tab:clean}
 \begin{adjustbox}{max width=\columnwidth}\input{generated/tab_clean.tex}\end{adjustbox}
 \end{table}
 
-On complete recordings, architecture barely matters. The six convolutional models, the two ResNets and the four
-lead-attention variants, fall within a narrow band of macro-AUROC, from \aucResCleanClean{} (ResNet,
-clean-trained) to \aucResAttnClean{} (ResNet with un-gated lead attention, single seed)
-(Table~\ref{tab:clean}). LG-EDL reaches \aucLgEdlCleanPM{}, the same as the corruption-trained ResNet (\aucResDropCleanPM{}); the
-paired difference is \bootCleanDiff{} with 95\% CI \bootCleanCI{}. The patch Transformer (\aucTransClean{}),
-XGBoost on per-lead statistics (\aucXgbClean{}) and the MLP (\aucMlpClean{}) are clearly weaker.
+On complete recordings the six convolutional models, the two ResNets and the four lead-attention variants, range
+from \aucResCleanClean{} (ResNet, clean-trained) to \aucResAttnClean{} (un-gated lead attention, one run)
+(Table~\ref{tab:clean}). LG-EDL reaches \aucLgEdlCleanPM{} and the corruption-trained ResNet \aucResDropCleanPM; their
+paired difference is \bootCleanDiff{} (95\% CI \bootCleanCI). The patch Transformer (\aucTransClean), XGBoost
+(\aucXgbClean) and the MLP (\aucMlpClean) are weaker. All scores are below the published PTB-XL benchmark for the
+same task at 100\,Hz, where the best single model reached \litBestSingleAuc{} and an ensemble \litEnsembleAuc{}
+\cite{strodthoff2021benchmark}; with no hyperparameter tuning and at most 15 epochs, absolute performance is not
+the subject of this study.
 
-These clean scores are below the published PTB-XL benchmark for the same task at 100\,Hz, where the best single
-model reaches \litBestSingleAuc{} and an ensemble \litEnsembleAuc{} \cite{strodthoff2021benchmark}. We tuned no
-hyperparameters and trained for at most 15 epochs, so absolute performance is not the subject of this study; all
-comparisons below are between models trained under the same budget.
-
-Per class, the hardest class for every model is hypertrophy (HYP; LG-EDL \pcLgEdlHyp, corruption-trained ResNet
-\pcResDropHyp) and the easiest is NORM (\pcLgEdlNorm{} and \pcResDropNorm). Calibration differs more than
-discrimination: LG-EDL has an ECE of \eceLgEdlCleanPM, against \eceResDropCleanPM{} for the temperature-scaled
-corruption-trained ResNet and between \eceResCleanClean{} and \eceResAttnClean{} for the other temperature-scaled
-attention and ResNet variants.
+For every model, hypertrophy is the hardest class (LG-EDL \pcLgEdlHyp, corruption-trained ResNet \pcResDropHyp) and
+NORM the easiest (\pcLgEdlNorm{} and \pcResDropNorm). LG-EDL has an ECE of \eceLgEdlCleanPM, against
+\eceResDropCleanPM{} for the corruption-trained ResNet and between \eceResCleanClean{} and \eceResAttnClean{} for the
+other ResNet and attention variants. Because only LG-EDL is not temperature-scaled, this difference does not show
+that the evidential head itself is less calibrated.
 
 % ---------------------------------------------------------------------------------------------------------------
-\subsection{Finding 1: training with simulated lead failure provides most of the robustness}
+\subsection{Training With Simulated Lead Failure}
 \label{sec:res-dropout}
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.92\textwidth]{fig1_auroc_vs_missing.png}
-\caption{Macro-AUROC on the test fold as $k$ randomly chosen leads are removed (three draws per $k$). Shaded
-bands: std over three seeds (LG-EDL and the corruption-trained ResNet only).}
+\includegraphics[width=\textwidth]{fig_random.pdf}
+\caption{Macro-AUROC on the test fold as $k$ randomly chosen leads are removed (three draws per $k$). (a) All models.
+(b) The five corruption-trained ResNet and lead-attention models, which overlap in (a). Bands: standard deviation
+over three seeds where available.}
 \label{fig:random}
 \end{figure*}
 
@@ -83,179 +54,158 @@ bands: std over three seeds (LG-EDL and the corruption-trained ResNet only).}
 \begin{adjustbox}{max width=\columnwidth}\input{generated/tab_random.tex}\end{adjustbox}
 \end{table}
 
-Removing leads separates the models far more than any architectural choice does
-(Fig.~\ref{fig:random}, Table~\ref{tab:random}). The same ResNet trained on clean ECGs falls from
-\aucResCleanKZero{} with all leads to \aucResCleanKTen{} when ten of twelve leads are removed, a loss of
-\lossResCleanKTen. Trained with the simulated failures of Section~\ref{sec:data}, it falls only from
-\aucResDropKZero{} to \aucResDropKTenPM, a loss of \lossResDropKTen; at $k=10$ the gap between the two training
-regimes is \gainDropKTen{} macro-AUROC. The corruption-trained ResNet pays no price on clean data
-(\aucResDropClean{} versus \aucResCleanClean). The clean-trained ResNet is a single run, but the gap at $k=10$ is
-more than twenty times the seed standard deviation of its corruption-trained counterpart.
+The training data separate the models more than the architecture does (Fig.~\ref{fig:random},
+Table~\ref{tab:random}). The ResNet trained on clean recordings falls from \aucResCleanKZero{} with all leads to
+\aucResCleanKTen{} with ten leads removed. The same architecture trained with simulated failures falls from
+\aucResDropKZero{} to \aucResDropKTenPM, so at $k=10$ the two training regimes differ by \gainDropKTen. The
+corruption-trained ResNet loses nothing on clean data (\aucResDropClean{} against \aucResCleanClean). The
+clean-trained ResNet is a single run, but the gap at $k=10$ is more than twenty times the seed standard deviation of
+the corruption-trained ResNet. The difference also holds at the decision level: at $k=10$, macro-F1 is
+\foneResCleanKTen{} for the clean-trained and \foneResDropKTen{} for the corruption-trained ResNet.
 
-Once training includes lead failure, the remaining architectures barely differ. At $k=10$, LG-EDL
-(\aucLgEdlKTenPM), LG-soft (\aucLgSoftKTen), LG-hard (\aucLgHardKTen), un-gated lead attention (\aucResAttnKTen) and
-the corruption-trained ResNet (\aucResDropKTen) are close: the four attention variants span \ablRangeKTen{}
-macro-AUROC, and the best of them is \gapAttnResKTen{} above the ResNet. Only the patch Transformer (\aucTransKTen), which mixes all leads in
-every token, degrades noticeably more. XGBoost, which receives missing leads as missing feature values, falls
-from \aucXgbKZero{} to \aucXgbKTen, and the MLP from \aucMlpKZero{} to \aucMlpKTen.
+With corruption training, the ResNet and the four attention variants lie close together at $k=10$: LG-EDL
+\aucLgEdlKTenPM, LG-soft \aucLgSoftKTen, LG-hard \aucLgHardKTen, un-gated attention \aucResAttnKTen{} and ResNet
+\aucResDropKTen. The attention variants span \ablRangeKTen, and the best is \gapAttnResKTen{} above the ResNet. The
+patch Transformer, which mixes all leads within each token, degrades more (\aucTransKTen). XGBoost, trained on clean
+records and given removed leads as missing features, falls from \aucXgbKZero{} to \aucXgbKTen, and the
+corruption-trained MLP from \aucMlpKZero{} to \aucMlpKTen.
 
 \begin{table}[t]
 \centering
-\caption{Macro-AUROC with a lead group removed, or with an artifact on six random leads (EMG at 10\,dB SNR,
-baseline wander, amplitude clipping).}
+\caption{Macro-AUROC with a lead group removed, or with an artifact on six random leads (EMG at 10\,dB, baseline
+wander, clipping).}
 \label{tab:group}
 \begin{adjustbox}{max width=\columnwidth}\input{generated/tab_group_artifact.tex}\end{adjustbox}
 \end{table}
 
-Losing a whole lead group hurts most where anatomy says it should (Table~\ref{tab:group}, Fig.~\ref{fig:group}).
-The six precordial leads, V1--V6, wrap around the chest from the right sternal border to the left axillary line
-and view the heart in the horizontal plane \cite{kligfield2007recommendations}. They are the primary diagnostic
-window on the anterior wall, where an anterior myocardial infarction is recognised, and they carry much of the
-ST-segment, T-wave and QRS-voltage evidence used for the other superclasses. A model that has only ever seen complete recordings has no reason to work without
-them, and the clean-trained ResNet does not: its macro-AUROC collapses to \aucResCleanPrec, against
-\aucResDropPrec{} after corruption training. The per-class breakdown shows that the damage reaches beyond
-infarction. The clean-trained ResNet's AUROC for MI falls from \pcResCleanMi{} to \pcResCleanMiPrec, but its
-AUROC for ST/T change falls further, from \pcResCleanSttc{} to \pcResCleanSttcPrec, and even NORM drops from
-\pcResCleanNorm{} to \pcResCleanNormPrec; the corruption-trained ResNet keeps \pcResDropMiPrec, \pcResDropSttcPrec{}
-and \pcResDropNormPrec{} for the same three classes. Artifacts tell the same story: with baseline wander on six
-leads, the two training regimes reach \aucResCleanWanderSix{} and \aucResDropWanderSix.
-
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.8\textwidth]{fig3_group_loss.png}
-\caption{Macro-AUROC with a lead group removed. Error bars: std over three seeds where available.}
-\label{fig:group}
-\end{figure*}
+The same pattern holds when a lead group is removed (Table~\ref{tab:group}). The precordial leads V1--V6 run across
+the chest from the right sternal border to the left axillary line and record the heart in the horizontal plane
+\cite{kligfield2007recommendations}; they are the main view of the anterior wall and carry much of the ST-segment,
+T-wave and QRS-amplitude information. Without them, the clean-trained ResNet falls to \aucResCleanPrec, against
+\aucResDropPrec{} after corruption training. The loss is not limited to infarction: for the clean-trained ResNet, the
+AUROC for MI falls from \pcResCleanMi{} to \pcResCleanMiPrec, that for ST/T change from \pcResCleanSttc{} to
+\pcResCleanSttcPrec, and that for NORM from \pcResCleanNorm{} to \pcResCleanNormPrec, whereas the corruption-trained
+ResNet keeps \pcResDropMiPrec, \pcResDropSttcPrec{} and \pcResDropNormPrec. With baseline wander on six leads, the two
+training regimes reach \aucResCleanWanderSix{} and \aucResDropWanderSix.
 
 % ---------------------------------------------------------------------------------------------------------------
-\subsection{Finding 2: quality gating does not improve on un-gated lead attention}
+\subsection{Quality Gating}
 \label{sec:res-gating}
-
-\begin{table*}[t]
-\centering
-\caption{Ablation of the lead-attention family (all corruption-trained). Clean, random loss ($k=6$, $k=10$),
-precordial loss (V1--V6) as macro-AUROC; clean ECE.}
-\label{tab:ablation}
-\input{generated/tab_ablation.tex}
-\end{table*}
-
-Telling the attention which leads to trust does not make it more robust than letting it attend to every lead
-(Table~\ref{tab:ablation}). The four variants share the per-lead encoder and the attention code; they differ only
-in whether attention and pooling are weighted by the estimated lead quality (hard mask or soft gate) and in the
-output head. Across them, clean macro-AUROC spans \ablRangeClean{} and
-macro-AUROC at $k=10$ spans \ablRangeKTen. The un-gated variant, which ignores lead quality entirely and receives
-zero-filled leads like the CNN baselines, has the highest clean score (\aucResAttnClean) and is never the lowest
-of the four under random or group lead loss. Three of the four variants are single runs, so differences of this
-size cannot be ranked; for scale, the seed standard deviation of LG-EDL under random lead loss is at most
-\seedStdLgEdlMaxLoss{} (Table~\ref{tab:random}). What the ablation does show is that gating provides no measurable benefit in this
-setting.
 
 \begin{table}[t]
 \centering
-\caption{Paired bootstrap of LG-EDL minus the corruption-trained ResNet (macro-AUROC; each side averaged over
-three seeds; \bootNBoot{} resamples; percentile 95\% CI). $^{*}$: CI excludes zero. Random removal is reported
-per draw; $k=0$ is identical to clean and omitted.}
-\label{tab:bootstrap}
-\begin{adjustbox}{max width=\columnwidth}\input{generated/tab_bootstrap.tex}\end{adjustbox}
+\caption{Lead-attention variants (all corruption-trained): macro-AUROC on clean data, with $k=6$ and $k=10$ leads
+removed at random and without V1--V6, and clean ECE. Three of the four variants are single runs.}
+\label{tab:ablation}
+\begin{adjustbox}{max width=\columnwidth}\input{generated/tab_ablation.tex}\end{adjustbox}
 \end{table}
 
-The paired bootstrap against the corruption-trained ResNet (Table~\ref{tab:bootstrap}) points the same way. Of
-the \bootNRows{} comparisons, none has a confidence interval entirely above zero; \bootNSigNeg{} lie entirely
-below zero, all of them artifact conditions: baseline wander on two, four and six leads (\bootWanderTwoDiff,
-\bootWanderFourDiff, \bootWanderSixDiff) and EMG noise on six leads (\bootEmgSixDiff). The intervals are not
-corrected for multiple comparisons and the conditions share test records, so they are not independent; with
-\bootNRows{} comparisons at the 5\% level, about one false positive is expected even if the models were
-equivalent. That all four significant differences are negative and concentrated in one artifact family suggests
-a systematic effect, but we treat it as tentative.
+The four attention variants share the per-lead encoder and the attention code and differ only in whether attention
+and pooling are weighted by the estimated quality and in the output head (Table~\ref{tab:ablation}). Their clean
+macro-AUROC spans \ablRangeClean{} and their macro-AUROC at $k=10$ spans \ablRangeKTen. The un-gated variant has the
+highest clean score (\aucResAttnClean) and is never the lowest of the four under random or group lead loss. Three of
+the variants are single runs and were not compared statistically; for scale, the largest seed standard deviation of
+LG-EDL under random lead loss is \seedStdLgEdlMaxLoss. The ablation therefore shows no benefit of gating larger than
+about 0.01 in this setting and cannot exclude a smaller one.
 
-One explanation is consistent with the ablation, although we did not test it directly. The quality assessor was
-trained to label a lead with strong baseline wander as unreliable, so the gated models down-weight such leads even
-though their QRS complexes remain readable, while the un-gated models still use them. Under wander on six leads,
-the three gated variants (\aucLgHardWanderSix, \aucLgSoftWanderSix, \aucLgEdlWanderSix) score below both the
-un-gated attention model (\aucResAttnWanderSix) and the corruption-trained ResNet (\aucResDropWanderSix).
+The paired bootstrap of LG-EDL against the corruption-trained ResNet covers the clean condition, 15 random-removal
+draws, three group removals and nine artifact conditions (Appendix, Table~\ref{tab:bootstrap}). None of the
+\bootNRows{} intervals lies entirely above zero. The intervals of \bootNSigNeg{} conditions lie entirely below zero,
+all of them artifacts: baseline wander on two, four and six leads (\bootWanderTwoDiff, \bootWanderFourDiff,
+\bootWanderSixDiff) and EMG on six leads (\bootEmgSixDiff). The intervals are uncorrected and the conditions share
+test records; with \bootNRows{} comparisons at the 5\% level, about one would exclude zero by chance if the two
+models were equivalent. That all four are negative and three are wander conditions suggests a systematic effect,
+which we treat as tentative.
 
-Two further observations limit what the gating ablation can test. First, replacing the estimated quality with the
-true quality ($q = 1-\text{severity}$) changes macro-AUROC by at most \oracleMaxAbsDiff{} for any gated run and
-condition, so quality estimation is not the bottleneck. Second, the simulated failures are easy to detect:
-removed leads are exactly zero or flat, the assessor scores untouched clean leads at \sqaMeanQClean{} on average,
-and its lead-level agreement with the true reliability label is at least \sqaGate{} for every corruption type
-outside the ambiguous band around severity 0.5. Its scores are therefore close to binary, which explains why hard masking
-and soft gating behave almost identically. Our simulation exercises the masking mechanism but hardly the soft
-weighting.
+A possible reason, not tested here, is that the assessor was trained to label leads with strong wander as
+unreliable, following our severity rule, so the gated models down-weight such leads although their QRS complexes
+remain readable. Under wander on six leads, the three gated variants (\aucLgHardWanderSix, \aucLgSoftWanderSix,
+\aucLgEdlWanderSix) score below both the un-gated model (\aucResAttnWanderSix) and the ResNet (\aucResDropWanderSix).
+
+Two observations limit what the ablation can test. Replacing the estimated quality by the true quality changes
+macro-AUROC by at most \oracleMaxAbsDiff{} for any gated run and condition, so the accuracy of the quality estimate
+is not the limiting factor. And the simulated failures are easy to detect: removed leads are zero or constant, the
+assessor scores untouched clean leads at \sqaMeanQClean{} on average, and its agreement with the reliability label is
+at least \sqaGate{} for every failure type outside the borderline band. Its scores are therefore close to binary,
+which is why hard and soft gating behave almost identically, and the soft weighting is barely exercised.
 
 % ---------------------------------------------------------------------------------------------------------------
-\subsection{Finding 3: evidential uncertainty neither improves selective prediction nor tracks lead loss}
+\subsection{Evidential Uncertainty and Abstention}
 \label{sec:res-edl}
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.95\textwidth]{fig4_risk_coverage_calibration.png}
-\caption{(a, b) Risk--coverage curves: records are kept in order of increasing uncertainty; risk is the mean
-fraction of the five labels predicted wrongly at the validation-tuned thresholds. (c) Reliability diagram on the
-clean test fold.}
+\includegraphics[width=\textwidth]{fig_riskcov.pdf}
+\caption{(a, b) Risk--coverage curves: records are kept in order of increasing uncertainty, and risk is the mean
+fraction of the five labels predicted wrongly at the validation-tuned thresholds; $s_p$ is the probability-based
+score of Section~\ref{sec:setup-metrics}. (c) Reliability diagram on the clean test fold (LG-EDL not
+temperature-scaled).}
 \label{fig:riskcov}
 \end{figure*}
 
 \begin{table}[t]
 \centering
-\caption{Selective prediction: risk (mean per-record label error) at 50\%, 80\% and 100\% coverage, and the mean
-risk over 20 coverage levels from 5\% to 100\% (lower is better). ``Confidence'' is
-$1-\frac{1}{5}\sum_k \max(p_k, 1-p_k)$ computed from the model's own probabilities.}
+\caption{Risk (mean per-record label error) at 50\%, 80\% and 100\% coverage and mean risk over 20 coverage levels
+from 5\% to 100\%. $U$: evidential uncertainty; $s_p$: probability-based score.}
 \label{tab:selective}
 \begin{adjustbox}{max width=\columnwidth}\input{generated/tab_selective.tex}\end{adjustbox}
 \end{table}
 
-If the evidential head adds useful uncertainty, ranking records by its uncertainty $U$ should give lower risk at a
-given coverage than ranking them by a simple confidence score computed from the same model's probabilities. It
-does not (Table~\ref{tab:selective}, Fig.~\ref{fig:riskcov}). On clean data, LG-EDL with $U$ has a risk of
-\riskLgEdlUCleanHalf{} at 50\% coverage, against \riskLgEdlConfCleanHalf{} with the confidence score; the mean
-risk over all coverage levels is \aurcLgEdlUClean{} for both. With six leads removed the two are again
-indistinguishable (\riskLgEdlUKSixHalf{} and \riskLgEdlConfKSixHalf{} at 50\% coverage). The lowest clean risk at
-50\% coverage belongs to the un-gated lead-attention model with a plain confidence score (\riskResAttnConfCleanHalf).
-
-\begin{table}[t]
-\centering
-\caption{LG-EDL abstention as leads are removed at random (mean over draws and seeds). The $U$ threshold $\tau$ is
-the 95th percentile of $U$ on the clean validation fold (mean over seeds: \uThresholdMean).}
-\label{tab:abstain}
-\begin{adjustbox}{max width=\columnwidth}\input{generated/tab_abstain.tex}\end{adjustbox}
-\end{table}
+If the evidential head added useful uncertainty, ranking records by $U$ would give a lower risk at a given coverage
+than ranking them by $s_p$ from the same model. It does not (Table~\ref{tab:selective}, Fig.~\ref{fig:riskcov}). On
+clean data, LG-EDL ranked by $U$ has a risk of \riskLgEdlUCleanHalf{} at 50\% coverage, against
+\riskLgEdlConfCleanHalf{} when ranked by $s_p$, and the mean risk over all coverage levels is \aurcLgEdlUClean{} for
+both. With six leads removed the values are again equal (\riskLgEdlUKSixHalf{} and \riskLgEdlConfKSixHalf{} at 50\%
+coverage). The lowest clean risk at 50\% coverage belongs to the un-gated attention model ranked by $s_p$
+(\riskResAttnConfCleanHalf). These differences were not tested statistically.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig_certainty.pdf}
-\caption{An illusion of certainty. As leads are removed at random, (a) LG-EDL's macro-AUROC falls steadily, while
-(b) its evidential uncertainty $U$ stays flat, far below the abstention threshold $\tau$. (c) Abstention by the
-uncertainty rule therefore stays near the 5\% set on clean validation data; all additional abstention comes from
-the lead-counting rule $\sum_j q_j<3$, which fires only once ten leads are gone. Lines: mean over three seeds (after
-averaging the three random draws); bands: std over seeds.}
+\caption{LG-EDL as leads are removed at random. (a) Macro-AUROC. (b) Mean evidential uncertainty $U$ and the
+abstention threshold $\tau$. (c) Share of records rejected by each abstention rule. Lines: mean over three seeds after
+averaging the three draws; bands: standard deviation over seeds.}
 \label{fig:certainty}
 \end{figure*}
 
-Nor does $U$ respond to missing leads (Fig.~\ref{fig:certainty}, Table~\ref{tab:abstain}). We call this an
-\emph{illusion of certainty}: the model's own estimate of how much it knows is, on average, the same for a complete
-twelve-lead recording and for one reduced to two leads, although its accuracy is not. Its threshold was set so that 5\% of clean
-validation records are rejected; on the test fold the $U$ criterion rejects \abstainUKZero\% of records with all
-leads present and between \abstainUKTen\% and \abstainUKTwo\% for every $k$ up to ten, while the mean of $U$
-drifts slightly \emph{down}, from \meanUKZero{} to \meanUKTen. All additional abstention comes from the second
-rule, $\sum_j q_j < 3$: it never fires while four or more leads remain (mean $\Sigma q$ \meanQsumKEight{} at
-$k=8$) and rejects every record at $k=10$ (\abstainQKTen\%). Under lead loss, the abstention behaviour of the
-system is therefore that of a lead-counting rule, which needs neither the evidential head nor a learned quality
-score for the failures simulated here. Finally, the evidential head is the least calibrated of the attention
-variants (ECE \eceLgEdlCleanPM; Section~\ref{sec:res-clean}); we did not test whether temperature scaling would
-close this gap.
+\begin{table}[t]
+\centering
+\caption{LG-EDL abstention as leads are removed at random (mean over draws, then seeds). $\tau$ is the 95th
+percentile of $U$ on the clean validation fold.}
+\label{tab:abstain}
+\begin{adjustbox}{max width=\columnwidth}\input{generated/tab_abstain.tex}\end{adjustbox}
+\end{table}
+
+$U$ also does not respond to missing leads (Fig.~\ref{fig:certainty}, Table~\ref{tab:abstain}). As $k$ goes from 0 to
+10, LG-EDL's macro-AUROC falls from \aucLgEdlKZero{} to \aucLgEdlKTen, while its mean $U$ changes from \meanUKZero{}
+to \meanUKTen. The $U$ rule rejects \abstainUKZero\% of test records with all leads present and between
+\abstainUKTen\% and \abstainUKTwo\% for every $k$ up to ten, close to the 5\% set on validation data. The lead-count
+rule never fires while four or more leads remain (mean $\sum_j q_j$ of \meanQsumKEight{} at $k=8$) and rejects every
+record at $k=10$. Under lead loss, abstention beyond the clean-data rate therefore comes only from the lead-count
+rule, which for these failures needs neither the evidential head nor a learned quality score.
+
+The flat $U$ is not accompanied by a loss of calibration in LG-EDL's probabilities. Its pooled ECE is
+\eceLgEdlKZero{} with all leads, \eceLgEdlKEight{} at $k=8$ and \eceLgEdlKTen{} at $k=10$, against \eceResDropKZero,
+\eceResDropKEight{} and \eceResDropKTen{} for the corruption-trained ResNet. We did not record per-condition summaries
+of $s_p$, so we cannot say whether the probability-based score rises with $k$.
 
 % ---------------------------------------------------------------------------------------------------------------
-\subsection{Summary of findings}
-\label{sec:res-summary}
+\subsection{An Example Record}
+\label{sec:res-case}
 
-\begin{enumerate}
-  \item Training with simulated lead failure accounts for almost all of the robustness: \gainDropKTen{}
-        macro-AUROC at $k=10$ for the same ResNet, with no cost on clean data.
-  \item Given that training, neither hard nor soft quality gating improves on un-gated lead attention, and LG-EDL
-        is never significantly better than the corruption-trained ResNet; it is significantly worse in
-        \bootNSigNeg{} of \bootNRows{} artifact and lead-loss comparisons.
-  \item The evidential uncertainty gives the same selective-prediction risk as a confidence score from the same
-        model, does not increase as leads are removed, and is less calibrated than temperature-scaled
-        sigmoid outputs; abstention under lead loss is driven entirely by counting usable leads.
-\end{enumerate}
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_vignette.pdf}
+\caption{One test record before and after V1--V6 are removed. (a) The raw recording; the grey leads are removed in
+(c). (b, c) Class probabilities of the corruption-trained ResNet and LG-EDL; ticks mark each model's validation-tuned
+decision threshold. The record was selected from records that both models classify correctly with all leads; it
+illustrates the behaviour described above and does not show how often it occurs.}
+\label{fig:vignette}
+\end{figure*}
+
+Fig.~\ref{fig:vignette} shows one test record, \vigPatient, labelled MI only. With all leads both models are
+correct; the ResNet gives MI a probability of \vigBaseMiFull{} and LG-EDL \vigLgMiFull. Without V1--V6, the ResNet
+still detects MI (\vigBaseMiCut), but its probability for ST/T change rises from \vigBaseStFull{} to \vigBaseStCut,
+above its threshold of \vigBaseStThr, so it adds a false label. LG-EDL keeps MI as its only label (\vigLgMiCut), and
+its $U$ changes from \vigLgUFull{} to \vigLgUCut. On average neither pattern favours one model
+(Section~\ref{sec:res-gating}).

@@ -49,6 +49,9 @@ def f3(x: float) -> str:
 
 
 def f4(x: float) -> str:
+    """Signed 4-decimal value; values that round to zero print as 0.0000 (no misleading sign)."""
+    if round(x, 4) == 0:
+        return "0.0000"
     return f"{x:+.4f}".replace("-", "$-$") if x < 0 else f"{x:+.4f}"
 
 
@@ -67,6 +70,152 @@ def pm(mean: float, std: float, n: int) -> str:
     return f"{mean:.3f}" if n < 2 else f"{mean:.3f}\\,$\\pm$\\,{std:.3f}"
 
 
+# ------------------------------------------------------------------ paper figures (IEEE two-column sizes)
+TEXT_W = 7.16  # in, IEEE two-column text width; every figure is drawn at its printed size, so 8 pt prints as 8 pt
+GRID = "#e6e4df"
+LABEL = {"lg_edl": "LG-EDL", "lg_soft": "LG-soft", "lg_hard": "LG-hard", "resnet_attn": "Un-gated lead attention",
+         "resnet_c1": "ResNet, corruption-trained", "resnet_c0": "ResNet, clean-trained",
+         "transformer": "Patch Transformer", "mlp": "MLP", "xgb": "XGBoost"}
+
+
+def paper_style():
+    """Matplotlib with the paper's typography (Times, 7-8 pt) and vector output."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update({"font.family": "serif", "font.serif": ["Times New Roman", "Times", "STIXGeneral"],
+                         "mathtext.fontset": "stix", "font.size": 8, "axes.titlesize": 8, "axes.labelsize": 8,
+                         "xtick.labelsize": 7.5, "ytick.labelsize": 7.5, "legend.fontsize": 7.5,
+                         "axes.linewidth": 0.6, "lines.linewidth": 1.2, "pdf.fonttype": 42})
+    return plt
+
+
+def _axes_style(ax) -> None:
+    ax.grid(True, color=GRID, lw=0.5)
+    ax.set_axisbelow(True)
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+
+
+def fig_random(R: Path, out: Path, style: dict) -> None:
+    """Macro-AUROC versus number of randomly removed leads: (a) all nine variants, (b) the five corruption-trained
+    ResNet / lead-attention models, which overlap in (a). Mean over draws, then over seeds; bands: std over seeds."""
+    plt = paper_style()
+    s = per_seed(pd.read_csv(R / "random_loss.csv"), ["n_missing"], "macro_auroc")
+    fig, axes = plt.subplots(1, 2, figsize=(TEXT_W, 2.35), layout="constrained")
+    close = ["lg_edl", "lg_soft", "lg_hard", "resnet_attn", "resnet_c1"]
+    for ax, keys, title in [(axes[0], list(LABEL), "(a) All models"),
+                            (axes[1], close, "(b) Corruption-trained ResNet and lead-attention models")]:
+        for key in keys:
+            d = s[s.variant == key].sort_values("n_missing")
+            st = style[key]
+            ax.plot(d.n_missing, d["mean"], color=st["color"], ls=st["ls"], marker=st["marker"], ms=3.5,
+                    label=LABEL[key] + (" (3 seeds)" if d.n.max() > 1 else ""), zorder=3 if key == "lg_edl" else 2)
+            if d.n.max() > 1:
+                ax.fill_between(d.n_missing, d["mean"] - d["std"], d["mean"] + d["std"], color=st["color"],
+                                alpha=0.18, lw=0)
+        _axes_style(ax)
+        ax.set_xticks(sorted(s.n_missing.unique()))
+        ax.set_xlabel("leads removed at random ($k$)")
+        ax.set_ylabel("macro-AUROC")
+        ax.set_title(title, loc="left")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="outside lower center", ncol=5, frameon=False)
+    fig.savefig(out / "fig_random.pdf")
+    plt.close(fig)
+
+
+def fig_riskcov(R: Path, out: Path, style: dict) -> None:
+    """(a, b) Risk-coverage on the clean test fold and with six random leads removed; (c) reliability diagram on
+    the clean test fold. Sources: risk_coverage.csv, calibration.csv."""
+    plt = paper_style()
+    rc = pd.read_csv(R / "risk_coverage.csv")
+    rc = rc.assign(variant=variant(rc))
+    curves = [("lg_edl", "edl_U", "LG-EDL ranked by $U$", "-"),
+              ("lg_edl", "sigmoid_style", "LG-EDL ranked by $s_p$", ":"),
+              ("resnet_c1", "sigmoid_style", "ResNet, corruption-trained, by $s_p$", "-"),
+              ("lg_soft", "sigmoid_style", "LG-soft by $s_p$", "-")]
+    fig, axes = plt.subplots(1, 3, figsize=(TEXT_W, 2.3), layout="constrained")
+    for ax, cond, title in [(axes[0], "clean", "(a) Clean"), (axes[1], "random_6", "(b) Six random leads removed")]:
+        d0 = rc[rc.condition == cond]
+        for key, score, lab, ls in curves:
+            d = d0[(d0.variant == key) & (d0.score == score)]
+            g = d.groupby(["seed", "coverage"], as_index=False).risk.mean().groupby("coverage").risk
+            mean, std, n = g.mean(), g.std(ddof=1), g.size().max()
+            ax.plot(mean.index, mean.values, color=style[key]["color"], ls=ls, label=lab)
+            if n > 1:
+                ax.fill_between(mean.index, mean - std, mean + std, color=style[key]["color"], alpha=0.15, lw=0)
+        _axes_style(ax)
+        ax.set_xlabel("coverage (fraction of records kept)")
+        ax.set_ylabel("risk (mean label error)")
+        ax.set_title(title, loc="left")
+    cal = pd.read_csv(R / "calibration.csv")
+    cal = cal[cal.q_mode != "oracle"].assign(variant=lambda d: variant(d))
+    ax = axes[2]
+    ax.plot([0, 1], [0, 1], color="#7a7b80", lw=0.8, ls="--")
+    for key in ("lg_edl", "resnet_c1"):
+        d = cal[cal.variant == key]
+        d = d.assign(wp=d.mean_pred * d["count"], wf=d.frac_positive * d["count"])
+        b = d.groupby("bin")[["wp", "wf", "count"]].sum()
+        b = b[b["count"] > 0]
+        ax.plot(b.wp / b["count"], b.wf / b["count"], color=style[key]["color"], marker=style[key]["marker"], ms=3,
+                label=LABEL[key])
+    _axes_style(ax)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("mean predicted probability")
+    ax.set_ylabel("fraction positive")
+    ax.set_title("(c) Reliability, clean", loc="left")
+    ax.legend(frameon=False, loc="upper left")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="outside lower center", ncol=4, frameon=False)
+    fig.savefig(out / "fig_riskcov.pdf")
+    plt.close(fig)
+
+
+def fig_corruptions(out: Path, sample: Path) -> None:
+    """The simulated failure types on one PTB-XL test record (a released demo sample, already standardised), drawn
+    with corrupt.py exactly as in plot_corruptions.py, at the printed size."""
+    import sys
+    sys.path.insert(0, str(REPO))
+    import torch
+    import plot_corruptions
+    from utils import FS, LEADS
+
+    plt = paper_style()
+    x = np.load(sample)["x"].astype(np.float32)
+    panels = plot_corruptions._panels(torch.from_numpy(x)[None], seed=0)
+    titles = ["Clean", "Random removal ($k=4$)", "Precordial leads removed", "Flatline (II, V1, V5)",
+              "EMG 10 dB (II, V1, V5)", "Baseline wander (II, V1, V5)", "Clipping (II, V1, V5)", "Training mixture"]
+    t = np.arange(x.shape[-1]) / FS
+    off = 6.0
+    fig, axes = plt.subplots(2, 4, figsize=(TEXT_W, 4.3), sharex=True, sharey=True, layout="constrained")
+    colors = (plot_corruptions.C_CLEAN, plot_corruptions.C_MILD, plot_corruptions.C_BAD)
+    for ax, title, (_, xc, sev) in zip(axes.ravel(), titles, panels):
+        xc, sev = xc[0].numpy(), sev[0].numpy()
+        for j in range(12):
+            c = colors[0] if sev[j] == 0 else (colors[1] if sev[j] < 0.5 else colors[2])
+            ax.plot(t, xc[j] - j * off, color=c, lw=0.45)
+            if sev[j] > 0:
+                ax.text(10.15, -j * off, f"{sev[j]:.2f}", color=c, va="center", fontsize=7)
+        ax.set_title(title, loc="left")
+        ax.set_yticks([-j * off for j in range(12)], LEADS)
+        ax.set_xlim(0, 11.6)
+        ax.set_ylim(-11.8 * off, off)
+        ax.set_xticks([0, 5, 10])
+        for s in ("top", "right"):
+            ax.spines[s].set_visible(False)
+        ax.tick_params(length=2)
+    for ax in axes[-1]:
+        ax.set_xlabel("time (s)")
+    handles = [plt.Line2D([], [], color=c, lw=1.5) for c in colors]
+    fig.legend(handles, ["untouched ($s_j=0$)", "corrupted, reliable ($s_j<0.5$)", "unreliable ($s_j\\geq0.5$)"],
+               loc="outside lower center", ncol=3, frameon=False)
+    fig.savefig(out / "fig_corruptions.pdf")
+    plt.close(fig)
+
+
 def fig_certainty(R: Path, out: Path) -> None:
     """Paper figure: LG-EDL accuracy, evidential uncertainty and abstention as leads are removed at random.
 
@@ -74,13 +223,7 @@ def fig_certainty(R: Path, out: Path) -> None:
     within each seed, then mean (line) and std (band / error bar) over the 3 seeds. Sources: random_loss.csv,
     abstain_rate.csv.
     """
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    plt.rcParams.update({"font.family": "serif", "font.serif": ["Times New Roman", "Times", "STIXGeneral"],
-                         "mathtext.fontset": "stix", "font.size": 8, "axes.titlesize": 8.5, "axes.labelsize": 8,
-                         "xtick.labelsize": 7.5, "ytick.labelsize": 7.5, "legend.fontsize": 7})
+    plt = paper_style()
     blue, red, ink, muted, grid = "#2a6fca", "#b3263a", "#16171a", "#7a7b80", "#e6e4df"
 
     rl = pd.read_csv(R / "random_loss.csv")
@@ -93,7 +236,7 @@ def fig_certainty(R: Path, out: Path) -> None:
     tau = pd.read_csv(R / "abstain_rate.csv").groupby("run").u_threshold.first()
     k = auc.index.values
 
-    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.05), constrained_layout=True)
+    fig, axes = plt.subplots(1, 3, figsize=(TEXT_W, 2.1), layout="constrained")
     for ax in axes:
         ax.grid(True, color=grid, lw=0.5)
         ax.set_axisbelow(True)
@@ -106,7 +249,7 @@ def fig_certainty(R: Path, out: Path) -> None:
     ax.fill_between(k, auc["mean"] - auc["std"], auc["mean"] + auc["std"], color=blue, alpha=0.15, lw=0)
     ax.plot(k, auc["mean"], "-o", color=blue, ms=3.5, lw=1.4)
     ax.set_ylabel("macro-AUROC")
-    ax.set_title("(a) What the model gets right", loc="left")
+    ax.set_title("(a) Discrimination", loc="left")
 
     ax = axes[1]
     mu, sd = g[("mean_U", "mean")], g[("mean_U", "std")]
@@ -115,7 +258,7 @@ def fig_certainty(R: Path, out: Path) -> None:
     ax.axhline(tau.mean(), color=ink, lw=1.0, ls="--", label=r"abstention threshold $\tau$")
     ax.set_ylim(0, max(0.6, tau.max() + 0.05))
     ax.set_ylabel("evidential uncertainty $U$")
-    ax.set_title("(b) What the model reports", loc="left")
+    ax.set_title("(b) Evidential uncertainty", loc="left")
     ax.legend(frameon=False, loc="lower left")
 
     ax = axes[2]
@@ -124,7 +267,7 @@ def fig_certainty(R: Path, out: Path) -> None:
     ax.bar(k + w / 2, 100 * g[("rate_qsum_below_3", "mean")], width=w, color=red, label=r"$\Sigma q<3$")
     ax.set_ylabel("records abstained (%)")
     ax.set_ylim(0, 105)
-    ax.set_title("(c) Which rule abstains", loc="left")
+    ax.set_title("(c) Abstention by rule", loc="left")
     ax.legend(frameon=False, loc="upper left")
 
     fig.savefig(out / "fig_certainty.pdf")
@@ -196,6 +339,14 @@ def main() -> None:
       "random_loss.csv: best attention variant minus resnet_c1 at k=10")
     m("seedStdLgEdlMaxLoss", f3(rl[(rl.variant == "lg_edl") & (rl.n_missing > 0)]["std"].max()),
       "random_loss.csv: largest LG-EDL seed std over k=2..10")
+    # Decision-level metrics under random lead loss: macro-F1 at the validation-tuned thresholds, and ECE.
+    rlf = pd.read_csv(R / "random_loss.csv")
+    for metric, pre in [("macro_f1", "fone"), ("ece", "ece")]:
+        sf = per_seed(rlf, ["n_missing"], metric)
+        for key, (stem, _) in VARIANTS.items():
+            for k, w in K_WORD.items():
+                r = sf[(sf.variant == key) & (sf.n_missing == k)].iloc[0]
+                m(f"{pre}{stem}K{w}", f3(r["mean"]), f"random_loss.csv {metric}, mean over draws then seeds")
     keys = list(VARIANTS)
     rows = []
     for key in keys:
@@ -393,17 +544,19 @@ def main() -> None:
         lines.append(f"\\newcommand{{\\{name}}}{{{val}}} % {src}")
     (out / "numbers.tex").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    # Figures: redrawn from the same CSVs by figures.py without the "Figure N." titles (the LaTeX captions number
-    # them); the corruption example figure is copied as is.
+    # Figures: drawn here at the printed IEEE size (vector PDF, Times, 7-8 pt), from the same CSVs and with the same
+    # colours and markers as figures.py. The corruption figure uses a released demo sample (PTB-XL test record).
     import sys
     sys.path.insert(0, str(REPO))
     import figures
-    figures.PAPER_MODE = True
     fig_out = PAPER / "figures"
     fig_out.mkdir(exist_ok=True)
-    for draw in (figures.fig1, figures.fig2, figures.fig3, figures.fig4):
-        draw(R, fig_out)
-    shutil.copy2(Path(a.fig_dir) / "corruption_examples.png", fig_out / "corruption_examples.png")
+    for old in ("fig1_auroc_vs_missing.png", "fig2_attention.png", "fig3_group_loss.png",
+                "fig4_risk_coverage_calibration.png", "corruption_examples.png"):
+        (fig_out / old).unlink(missing_ok=True)
+    fig_random(R, fig_out, figures.STYLE)
+    fig_riskcov(R, fig_out, figures.STYLE)
+    fig_corruptions(fig_out, REPO / "demo_samples" / "sample_04.npz")
     fig_certainty(R, fig_out)
     print(f"{len(macros)} macros -> {out / 'numbers.tex'}; tables: "
           + ", ".join(sorted(p.name for p in out.glob("tab_*.tex"))) + f"; figures redrawn in {fig_out}")

@@ -2,56 +2,52 @@
 \label{sec:introduction}
 \input{sections/fig_overview}
 
-\IEEEPARstart{T}{he} twelve-lead electrocardiogram (ECG) is the workhorse of cardiac diagnosis: ten electrodes,
-twelve views of the heart's electrical activity, ten seconds of signal, all of it standardised down to where
-each electrode belongs \cite{kligfield2007recommendations}. That picture assumes every electrode stays where it
-was placed. In emergency departments, ambulances and intensive-care units it often does not. Electrodes peel away
-from sweating skin, cables are tugged during transfers, muscle tremor buries the signal in noise, and cables end
-up connected to the wrong electrodes, an error that can mimic serious disease \cite{batchvarov2007incorrect}. The recording that reaches an automated classifier is frequently not the
-recording its training data promised.
+\IEEEPARstart{T}{he} standard electrocardiogram (ECG) records ten seconds from ten electrodes and derives twelve
+leads, and its interpretation assumes that each electrode sits where the recording conventions place it
+\cite{kligfield2007recommendations}. In emergency departments, ambulances and intensive-care units this assumption
+does not always hold. Electrodes lose contact, cables are pulled during transfers, muscle activity adds noise, and
+cables can be connected to the wrong electrodes, which can imitate disease \cite{batchvarov2007incorrect}. An
+automated classifier used in these settings therefore receives recordings that differ from those it was trained
+on.
 
-Deep networks trained on large collections of twelve-lead ECGs now diagnose common abnormalities with high
-accuracy \cite{ribeiro2020automatic}; on PTB-XL, the best published models reach a macro-AUROC of about 0.93 for
-the five diagnostic superclasses \cite{strodthoff2021benchmark}. Their failure mode under
-missing or corrupted leads is less reassuring: a convolutional network has no built-in notion that a channel has
-gone flat, so it simply produces a diagnosis from whatever it receives, and nothing in its output tells the
-clinician that half of the recording was missing. Two families of remedies are natural. The first gives the model
-\emph{flexibility over the leads}: classifiers that accept reduced lead sets, as in the PhysioNet/Computing in
-Cardiology Challenge 2021 \cite{reyna2021willtwodo,nejedly2022ensemble}, models pre-trained with random lead
-masking \cite{oh2022leadagnostic}, and, one step further, attention that is told which leads to trust. The second
-adds \emph{uncertainty}: replace the sigmoid output by an evidential head that reports how much evidence supports
-each prediction, so the system can abstain when it does not know \cite{sensoy2018edl}. Both are appealing, and
-both are usually evaluated as part of a larger system, next to a change that may matter more: training on
-corrupted inputs.
+Deep networks trained on large collections of 12-lead ECGs classify common abnormalities with high accuracy
+\cite{ribeiro2020automatic}; on PTB-XL the reference benchmark reports a macro-averaged area under the receiver
+operating characteristic curve (macro-AUROC) of about 0.93 for five diagnostic superclasses
+\cite{strodthoff2021benchmark}. A convolutional network has no explicit representation of a missing or corrupted
+channel, so it returns a diagnosis whatever the state of the input. Three kinds of remedy have been used. The
+training data can include recordings with leads removed, as in random lead masking \cite{oh2022leadagnostic},
+modality dropout in multimodal learning \cite{neverova2016moddrop}, and the reduced-lead models of the
+PhysioNet/Computing in Cardiology Challenge 2021 \cite{reyna2021willtwodo,nejedly2022ensemble}. Information about
+signal quality, long studied for ECG acceptability and alarm reduction \cite{clifford2012sqi,behar2013sqi}, can be
+passed to the model so that it relies less on poor leads. And the model can estimate its own uncertainty, for
+example with evidential deep learning \cite{sensoy2018edl}, so that the system can abstain.
 
-We set out to test these mechanisms one at a time. We built a carefully controlled pipeline that combines both
-(Fig.~\ref{fig:overview}): a frozen signal-quality assessor scores every lead, a mask-aware lead attention uses
-those scores to suppress unreliable leads, and a per-class Beta-evidential head decides when to abstain. We then
-trained nine model variants (the full system, three ablations and five baselines), all neural models under one
-shared training budget, and evaluated them on identical, deterministically corrupted copies of the PTB-XL test
-fold, with paired bootstrap intervals and oracle controls.
+These remedies are often combined. If a quality-aware or uncertainty-aware model is trained on corrupted recordings
+and compared with a baseline trained on clean ones, any difference mixes the effect of the architecture with that
+of the training data. We therefore ask a narrower question: once a classifier is trained with simulated lead
+failure, does gating its lead attention by a per-lead quality estimate, or adding an evidential output that can
+abstain, improve robustness or make its uncertainty more useful?
 
-The outcome was not the one the architecture was designed for. Training with simulated lead failure, a simple
-data augmentation, recovered most of the robustness that the clean-trained network lost; the quality gating and
-the evidential head added nothing measurable on top. More strikingly, the evidential uncertainty did not respond
-to the failures at all. As leads were removed, accuracy fell steadily while the model's reported uncertainty
-stayed flat, so the network looked exactly as sure of a two-lead recording as of a complete one. We call this an
-\emph{illusion of certainty}, and it is the main warning of this paper: an uncertainty estimate that is
-well-behaved on clean data can be blind to the very failure it is meant to flag.
+We built a pipeline that contains both components (Fig.~\ref{fig:overview}). A frozen signal-quality assessor
+scores every lead, a lead-attention network uses the scores to down-weight or exclude unreliable leads, and a
+per-class Beta-evidential output reports an uncertainty that drives abstention. We trained this model, three
+ablations that remove the gating or replace the evidential output, and five baselines under one training budget,
+and tested all of them on the same deterministically corrupted copies of the PTB-XL test fold, with an oracle
+quality control and paired bootstrap intervals. The gated and evidential models were trained only with
+corruption, so the study measures what these components add to corruption training, not what they would achieve
+without it.
 
-Concretely, our contributions are three controlled empirical findings on PTB-XL:
-\begin{itemize}\setlength{\itemsep}{2pt}
-  \item \textbf{Training with lead failure does the heavy lifting.} The same ResNet gains \gainDropKTen{}
-        macro-AUROC with ten of twelve leads missing when trained on simulated failures, with no cost on complete
-        recordings (Section~\ref{sec:res-dropout}).
-  \item \textbf{Quality gating adds no measurable benefit.} Hard and soft gating by a learned per-lead quality
-        score do not improve on un-gated lead attention, and the full system is never significantly better than a
-        corruption-trained ResNet across \bootNRows{} paired comparisons; it is worse under baseline wander and
-        heavy muscle noise (Section~\ref{sec:res-gating}).
-  \item \textbf{Evidential uncertainty creates an illusion of certainty.} It gives the same selective-prediction
-        risk as a plain confidence score, does not rise as leads disappear (\meanUKZero{} with all leads,
-        \meanUKTen{} with two), and every abstention under lead loss comes from simply counting usable leads
-        (Section~\ref{sec:res-edl}).
+The contributions are three empirical results on PTB-XL with simulated lead failure:
+\begin{itemize}
+  \item Training with simulated lead failure accounts for most of the difference between models under lead loss:
+        the same residual network (ResNet) gains \gainDropKTen{} macro-AUROC with ten of twelve leads removed and
+        loses nothing on complete recordings (Section~\ref{sec:res-dropout}).
+  \item With that training, hard and soft quality gating show no measurable advantage over un-gated lead
+        attention, and the full system is not significantly better than a corruption-trained ResNet in any of
+        \bootNRows{} paired comparisons; it is worse under baseline wander and strong muscle noise
+        (Section~\ref{sec:res-gating}).
+  \item The evidential uncertainty ranks errors no better than the model's predicted probabilities and does not
+        increase as leads are removed, while discrimination falls; abstention beyond the clean-data rate comes only
+        from a rule that counts usable leads (Section~\ref{sec:res-edl}).
 \end{itemize}
-Code, trained models, all result tables and an interactive demonstration are released with the paper; every number
-in the text is generated directly from the released result files.
+The code, trained models and result files are publicly available (see the first-page footnote).

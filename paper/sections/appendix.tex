@@ -1,0 +1,11 @@
+Table~\ref{tab:bootstrap} lists the paired bootstrap comparison of LG-EDL with the corruption-trained ResNet for every
+test condition (Section~\ref{sec:setup-metrics}).
+
+\begin{table}[h]
+\centering
+\caption{Paired bootstrap of LG-EDL minus the corruption-trained ResNet (macro-AUROC; each side averaged over three
+seeds; \bootNBoot{} resamples; percentile 95\% CI). $^{*}$: CI excludes zero. Random removal is reported per draw;
+$k=0$ equals the clean condition and is omitted.}
+\label{tab:bootstrap}
+\begin{adjustbox}{max width=\columnwidth}\input{generated/tab_bootstrap.tex}\end{adjustbox}
+\end{table}

@@ -3,55 +3,56 @@
 
 \subsection{Training}
 \label{sec:setup-train}
-All neural models share one training recipe and budget, with no per-model tuning: AdamW (learning rate
-$10^{-3}$, weight decay $10^{-2}$), cosine learning-rate decay over all steps, batches of 128, at most 15 epochs,
-and early stopping with a patience of four epochs on the macro-AUROC of the clean validation fold, whose best
-checkpoint is the one evaluated. Mixed precision is used on the GPU. Corruption-trained models corrupt every batch
-on the fly (Section~\ref{sec:data-train}); the quality-aware models receive $\mathbf{q}$ from the frozen assessor
-applied to that corrupted batch. LG-EDL uses Eq.~\eqref{eq:edlloss}, all other neural models binary
-cross-entropy. LG-EDL and the corruption-trained ResNet, the two models the main comparison rests on, were trained
-with three seeds (0, 1, 2); every other variant with one. The full run list (twelve neural trainings and
-XGBoost) took \gpuMinutes{} minutes of wall-clock time in total on a single GPU machine.
+All neural models share one training recipe without per-model tuning: AdamW (learning rate $10^{-3}$, weight decay
+$10^{-2}$), cosine learning-rate decay over all steps, batches of 128, at most 15 epochs, and early stopping with a
+patience of four epochs on the macro-AUROC of the clean validation fold, whose best checkpoint is evaluated.
+Selecting on clean data keeps checkpoint selection independent of the test corruptions but may favour clean
+performance over robustness. Mixed precision is used on the GPU. Corruption-trained models corrupt every batch on the
+fly (Section~\ref{sec:data-train}), and the quality-aware models receive $\mathbf{q}$ from the frozen assessor
+applied to that corrupted batch. LG-EDL is trained with Eq.~\eqref{eq:edlloss} and the other neural models with
+binary cross-entropy. LG-EDL and the corruption-trained ResNet, the two models compared directly, were trained with
+three seeds (0, 1, 2); every other variant was trained once. The 13 trainings (twelve neural models and XGBoost) took
+\gpuMinutes{} minutes of wall-clock time on one GPU.
 
-\subsection{Post-hoc fitting on the validation fold}
+\subsection{Post-Hoc Fitting on the Validation Fold}
 \label{sec:setup-fit}
-Three quantities are fitted on clean validation predictions only, never on test data. (i) Every model except
-LG-EDL receives one temperature $T$, applied as $\sigma(\mathrm{logit}(p)/T)$ and chosen to minimise the binary
-cross-entropy over all five classes ($T\in[e^{-3},e^{3}]$), so that calibration comparisons with the evidential
-head are fair. (ii) Each model receives a decision threshold per class that maximises that class's F1 score
-(grid 0.01--0.99). (iii) LG-EDL receives the abstention threshold $\tau$ of Section~\ref{sec:method-abstain}.
+Three quantities are fitted on clean validation predictions only. (i) Every model except LG-EDL receives one
+temperature $T$, applied as $\sigma(\mathrm{logit}(p)/T)$ and chosen to minimise the binary cross-entropy over the
+five classes ($T\in[e^{-3},e^{3}]$); LG-EDL's probabilities are used as the evidential head produces them. This gives
+the sigmoid models a calibration step that LG-EDL does not receive, which favours them in calibration comparisons.
+(ii) Each model receives a decision threshold per class that maximises that class's F1 score on a grid from 0.01 to
+0.99. (iii) LG-EDL receives the abstention threshold $\tau$ of Section~\ref{sec:method-abstain}.
 
 \subsection{Metrics}
 \label{sec:setup-metrics}
-The primary metric is the macro-averaged area under the ROC curve over the five classes (macro-AUROC), which does
-not depend on thresholds. We also report macro-F1 at the tuned thresholds, per-class AUROC, and the expected
-calibration error (ECE) computed over all $N\times5$ binary predictions in 15 equal-width bins.
+The primary metric is macro-AUROC over the five classes, which does not depend on thresholds. We also report macro-F1
+at the tuned thresholds, per-class AUROC, and the expected calibration error (ECE) over all $N\times5$ binary
+predictions in 15 equal-width bins. Because most of these predictions are negatives of low-prevalence classes, this
+pooled ECE is dominated by small probabilities.
 
-\emph{Selective prediction.} For multi-label outputs we define the per-record risk as the fraction of the five
-labels predicted wrongly at the tuned thresholds. Records are sorted by an uncertainty score, from most to least
-certain, and the risk among the kept records is reported at 20 coverage levels from 5\% to 100\%. LG-EDL is
-scored with its evidential uncertainty $U$ and, for a like-for-like comparison, with the confidence score
-$1-\frac{1}{5}\sum_k\max(p_k,1-p_k)$ that is used for every other model.
+For selective prediction, the risk of a record is the fraction of its five labels predicted wrongly at the tuned
+thresholds. Records are sorted from most to least certain by an uncertainty score, and the mean risk of the kept
+records is reported at 20 coverage levels from 5\% to 100\%. LG-EDL is ranked by its evidential uncertainty $U$ and,
+for comparison, by the probability-based score $s_p=1-\frac{1}{5}\sum_c\max(p_c,1-p_c)$, which is used for every
+other model. Higher values of $U$ and $s_p$ mean lower certainty.
 
-\emph{Statistical comparison.} The main comparison, LG-EDL against the corruption-trained ResNet, uses a paired
-bootstrap over test records: in each of \bootNBoot{} resamples, both models' macro-AUROC are computed on the same
-records, each averaged over its three seeds, and the 95\% interval of the difference is taken from the
-percentiles. Intervals are reported per condition and are not corrected for multiple comparisons; we discuss
-this where it matters (Section~\ref{sec:res-gating}).
+LG-EDL and the corruption-trained ResNet are compared with a paired bootstrap over test records: in each of
+\bootNBoot{} resamples, both models' macro-AUROC are computed on the same records, each averaged over its three
+seeds, and the 95\% interval of the difference is taken from the percentiles. The intervals reflect test-set
+sampling, not training variability, which is reported separately as the standard deviation over seeds. They are
+given per condition without correction for multiple comparisons. The single-seed ablation variants are compared
+descriptively.
 
-\emph{Oracle control.} To separate the value of gating from the accuracy of the quality estimate, the gated
-models are also evaluated with the true reliability $q^\ast_j=1-s_j$ in place of the assessor's estimate.
-
-\emph{Quality-assessor check.} The assessor's lead-level agreement, the accuracy of $\mathbf{1}[q_j\ge0.5]$ against
-the reliable label $\mathbf{1}[s_j<0.5]$, is measured on corrupted copies of the test fold, both over all leads
-and excluding the ambiguous band $|s_j-0.5|<0.1$. Excluding that band, the lowest agreement over all failure
-types is \sqaGate{} (\sqaGateType); including it, EMG at the test SNR, whose severity sits exactly on the
-boundary, is matched on only \sqaEmgTestCorrupted{} of its corrupted leads.
+To separate the value of gating from the accuracy of the quality estimate, the gated models are also evaluated with
+the true reliability $q^\ast_j=1-s_j$ in place of the assessor's estimate (oracle control). The assessor's own
+accuracy is measured as the agreement of $\mathbf{1}[q_j\ge0.5]$ with the reliable label $\mathbf{1}[s_j<0.5]$ on
+corrupted copies of the test fold, over all leads and excluding the borderline band $|s_j-0.5|<0.1$. Excluding the
+band, the lowest agreement over failure types is \sqaGate{} (\sqaGateType); including it, EMG at the test SNR, whose
+severity lies exactly on the boundary, is matched on \sqaEmgTestCorrupted{} of its corrupted leads.
 
 \subsection{Reproducibility}
 \label{sec:setup-repro}
-Every training run is resumable from atomic checkpoints that store all random-number states, and the test-time
-corruption is deterministic. Twenty unit tests, including exact invariance of the masked models to replaced
-leads, attention rows that sum to one with zeros on masked keys, deterministic test corruption and an overfitting
-check, pass before any training. All tables and numbers in this paper are generated by a script directly from the
-released result files.
+Training runs can be resumed from checkpoints that store all random-number states, and the test-time corruption is
+deterministic. Twenty unit tests, including the exact invariance of the masked models to replaced leads, attention
+rows that sum to one with zeros on masked keys, deterministic test corruption and an overfitting check, passed
+before training. The tables and reported numbers are generated by a script from the released result files.

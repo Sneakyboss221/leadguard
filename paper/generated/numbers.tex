@@ -169,6 +169,114 @@
 \newcommand{\lossLgEdlKTen}{0.099} % random_loss.csv
 \newcommand{\gapAttnResKTen}{0.012} % random_loss.csv: best attention variant minus resnet_c1 at k=10
 \newcommand{\seedStdLgEdlMaxLoss}{0.002} % random_loss.csv: largest LG-EDL seed std over k=2..10
+\newcommand{\foneLgEdlKZero}{0.715} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgEdlKTwo}{0.708} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgEdlKFour}{0.698} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgEdlKSix}{0.674} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgEdlKEight}{0.642} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgEdlKTen}{0.554} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgSoftKZero}{0.715} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgSoftKTwo}{0.710} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgSoftKFour}{0.704} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgSoftKSix}{0.681} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgSoftKEight}{0.645} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgSoftKTen}{0.566} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgHardKZero}{0.726} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgHardKTwo}{0.715} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgHardKFour}{0.708} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgHardKSix}{0.685} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgHardKEight}{0.652} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneLgHardKTen}{0.570} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResAttnKZero}{0.726} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResAttnKTwo}{0.716} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResAttnKFour}{0.711} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResAttnKSix}{0.679} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResAttnKEight}{0.647} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResAttnKTen}{0.570} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResDropKZero}{0.706} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResDropKTwo}{0.696} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResDropKFour}{0.688} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResDropKSix}{0.663} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResDropKEight}{0.628} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResDropKTen}{0.548} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResCleanKZero}{0.693} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResCleanKTwo}{0.648} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResCleanKFour}{0.574} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResCleanKSix}{0.458} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResCleanKEight}{0.345} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneResCleanKTen}{0.259} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneTransKZero}{0.680} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneTransKTwo}{0.676} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneTransKFour}{0.668} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneTransKSix}{0.638} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneTransKEight}{0.598} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneTransKTen}{0.503} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneMlpKZero}{0.486} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneMlpKTwo}{0.477} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneMlpKFour}{0.465} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneMlpKSix}{0.447} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneMlpKEight}{0.426} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneMlpKTen}{0.406} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneXgbKZero}{0.598} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneXgbKTwo}{0.482} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneXgbKFour}{0.388} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneXgbKSix}{0.325} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneXgbKEight}{0.295} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\foneXgbKTen}{0.280} % random_loss.csv macro_f1, mean over draws then seeds
+\newcommand{\eceLgEdlKZero}{0.032} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgEdlKTwo}{0.030} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgEdlKFour}{0.025} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgEdlKSix}{0.020} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgEdlKEight}{0.020} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgEdlKTen}{0.056} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgSoftKZero}{0.014} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgSoftKTwo}{0.014} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgSoftKFour}{0.017} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgSoftKSix}{0.022} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgSoftKEight}{0.033} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgSoftKTen}{0.063} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgHardKZero}{0.012} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgHardKTwo}{0.012} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgHardKFour}{0.013} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgHardKSix}{0.021} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgHardKEight}{0.030} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceLgHardKTen}{0.059} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResAttnKZero}{0.014} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResAttnKTwo}{0.012} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResAttnKFour}{0.013} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResAttnKSix}{0.015} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResAttnKEight}{0.017} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResAttnKTen}{0.023} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResDropKZero}{0.015} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResDropKTwo}{0.014} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResDropKFour}{0.016} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResDropKSix}{0.017} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResDropKEight}{0.020} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResDropKTen}{0.031} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResCleanKZero}{0.011} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResCleanKTwo}{0.021} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResCleanKFour}{0.056} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResCleanKSix}{0.135} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResCleanKEight}{0.226} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceResCleanKTen}{0.301} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceTransKZero}{0.015} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceTransKTwo}{0.017} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceTransKFour}{0.016} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceTransKSix}{0.017} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceTransKEight}{0.019} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceTransKTen}{0.034} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceMlpKZero}{0.054} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceMlpKTwo}{0.068} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceMlpKFour}{0.088} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceMlpKSix}{0.110} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceMlpKEight}{0.137} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceMlpKTen}{0.168} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceXgbKZero}{0.013} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceXgbKTwo}{0.038} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceXgbKFour}{0.108} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceXgbKSix}{0.183} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceXgbKEight}{0.250} % random_loss.csv ece, mean over draws then seeds
+\newcommand{\eceXgbKTen}{0.298} % random_loss.csv ece, mean over draws then seeds
 \newcommand{\aucLgEdlPrec}{0.871} % group_loss.csv
 \newcommand{\aucLgEdlLimb}{0.869} % group_loss.csv
 \newcommand{\aucLgEdlVOneThree}{0.882} % group_loss.csv
@@ -284,7 +392,7 @@
 \newcommand{\bootNBoot}{1000} % bootstrap_ci.csv n_boot
 \newcommand{\bootCleanDiff}{$-$0.0006} % bootstrap_ci.csv diff
 \newcommand{\bootCleanCI}{[$-$0.0053, +0.0039]} % bootstrap_ci.csv ci_low/ci_high
-\newcommand{\bootKTwoDADiff}{+0.0000} % bootstrap_ci.csv diff
+\newcommand{\bootKTwoDADiff}{0.0000} % bootstrap_ci.csv diff
 \newcommand{\bootKTwoDACI}{[$-$0.0052, +0.0051]} % bootstrap_ci.csv ci_low/ci_high
 \newcommand{\bootKTwoDBDiff}{+0.0023} % bootstrap_ci.csv diff
 \newcommand{\bootKTwoDBCI}{[$-$0.0027, +0.0071]} % bootstrap_ci.csv ci_low/ci_high
@@ -294,10 +402,10 @@
 \newcommand{\bootKFourDACI}{[$-$0.0062, +0.0044]} % bootstrap_ci.csv ci_low/ci_high
 \newcommand{\bootKFourDBDiff}{+0.0021} % bootstrap_ci.csv diff
 \newcommand{\bootKFourDBCI}{[$-$0.0036, +0.0073]} % bootstrap_ci.csv ci_low/ci_high
-\newcommand{\bootKFourDCDiff}{$-$0.0000} % bootstrap_ci.csv diff
+\newcommand{\bootKFourDCDiff}{0.0000} % bootstrap_ci.csv diff
 \newcommand{\bootKFourDCCI}{[$-$0.0058, +0.0053]} % bootstrap_ci.csv ci_low/ci_high
 \newcommand{\bootKSixDADiff}{+0.0064} % bootstrap_ci.csv diff
-\newcommand{\bootKSixDACI}{[$-$0.0000, +0.0126]} % bootstrap_ci.csv ci_low/ci_high
+\newcommand{\bootKSixDACI}{[0.0000, +0.0126]} % bootstrap_ci.csv ci_low/ci_high
 \newcommand{\bootKSixDBDiff}{$-$0.0011} % bootstrap_ci.csv diff
 \newcommand{\bootKSixDBCI}{[$-$0.0071, +0.0054]} % bootstrap_ci.csv ci_low/ci_high
 \newcommand{\bootKSixDCDiff}{+0.0024} % bootstrap_ci.csv diff

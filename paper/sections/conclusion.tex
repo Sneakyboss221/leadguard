@@ -1,19 +1,16 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We asked whether two appealing mechanisms, quality-gated lead attention and evidential abstention, help an ECG
-classifier survive lead failure once its training already includes such failures. In a controlled ablation on
-PTB-XL, they did not. Training on simulated failures delivered the robustness, \gainDropKTen{} macro-AUROC for
-the same ResNet with ten leads missing; quality gating added a provable invariance to dead leads but no
-measurable accuracy; and the evidential uncertainty stayed flat while accuracy fell from \aucLgEdlKZero{} to
-\aucLgEdlKTen.
+We asked whether quality-gated lead attention and evidential abstention help an ECG classifier cope with lead
+failure when its training already includes simulated failures. In this setting on PTB-XL, they did not measurably
+help. Corruption training raised the macro-AUROC of the same ResNet by \gainDropKTen{} with ten leads missing. On top
+of it, quality gating gave a provable invariance to excluded leads but no detectable gain in discrimination, and the
+evidential uncertainty did not change as leads were removed although macro-AUROC fell from \aucLgEdlKZero{} to
+\aucLgEdlKTen; only the lead-count rule triggered additional abstention.
 
-That last result is the one we would put in front of anyone deploying ECG models: a network can be as sure of two
-leads as of twelve, and an uncertainty score that behaves well on clean data offers no protection unless it is
-tested under the failures it is meant to catch. Until it is, an explicit check of the signal is the safer alarm.
-
-The natural next steps follow from our limitations: real rather than simulated artifacts, including intermittent
-contact and swapped electrodes; a second dataset; more seeds for the ablation; and uncertainty methods that are
-explicitly asked to respond to missing information, for instance an evidential objective tied to the remaining
-signal, or ensembles. We release the code, trained models, result files and an interactive demonstration so that
-each of these questions can be tested against the same baselines.
+Two points follow within the limits of this study. Architectures proposed for missing leads should be compared with
+a baseline trained on the same failures, and an uncertainty estimate should be tested under the failures it is meant
+to detect before it is relied on to detect them. Further work should use a factorial design with every architecture
+trained with and without corruption, evaluate on real artifacts such as those annotated in PTB-XL and on failure
+types held out of training, add a second dataset and more seeds for the ablation, and compare uncertainty methods
+that are designed to respond to missing information.

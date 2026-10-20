@@ -21,13 +21,13 @@ DPI = 300
 # Variants in a fixed order; categorical hues assigned in that order (validated 8-hue palette).
 # The two ResNets share a hue and differ by line style / hatch (composite encoding, 9 variants on 8 hues).
 VARIANTS = [  # (key, label, color, linestyle, marker, hatch)
-    ("lg_edl", "LG-EDL (proposed)", "#2a78d6", "-", "o", ""),
+    ("lg_edl", "LG-EDL", "#2a78d6", "-", "o", ""),
     ("resnet_c1", "ResNet (corruption-trained)", "#eb6834", "-", "s", ""),
     ("resnet_c0", "ResNet (clean-trained)", "#eb6834", "--", "s", "//"),
     ("lg_soft", "LG-soft", "#1baf7a", "-", "^", ""),
     ("lg_hard", "LG-hard", "#eda100", "-", "v", ""),
     ("resnet_attn", "ResNet + lead attention", "#e87ba4", "-", "D", ""),
-    ("transformer", "Transformer", "#008300", "-", "P", ""),
+    ("transformer", "Patch Transformer", "#008300", "-", "P", ""),
     ("mlp", "MLP", "#4a3aa7", "-", "X", ""),
     ("xgb", "XGBoost", "#e34948", "-", "*", ""),
 ]

@@ -54,7 +54,7 @@ def main() -> None:
     blue, orange, ink, muted, off = "#2a6fca", "#d9622b", "#16171a", "#7a7b80", "#b3b2ac"
     grid_minor, grid_major = "#f6dedb", "#ebb9b4"
 
-    fig = plt.figure(figsize=(7.0, 3.1), constrained_layout=True)
+    fig = plt.figure(figsize=(7.16, 2.9), constrained_layout=True)
     gs = GridSpec(2, 2, figure=fig, width_ratios=[1.55, 1.0], height_ratios=[1, 1])
     ax = fig.add_subplot(gs[:, 0])
     raw = np.array(full["raw"])
@@ -74,7 +74,7 @@ def main() -> None:
         ax.text(-0.15, y0, LEADS[j], ha="right", va="center", fontsize=7.5,
                 color=off if j in CHEST else ink, fontweight="bold")
     ax.plot([10.25, 10.25], [0.2, 1.2], color=ink, lw=1.2)
-    ax.text(10.35, 0.7, "1 mV", fontsize=6.5, va="center")
+    ax.text(10.35, 0.7, "1 mV", fontsize=7, va="center")
     ax.set_xlim(-0.9, 10.9)
     ax.set_ylim(-11 * offset - 2, 2.2)
     ax.set_yticks([])
@@ -89,7 +89,7 @@ def main() -> None:
         y = np.arange(len(CLASSES))
         h = 0.36
         axp.barh(y - h / 2, res["base"]["prob"], height=h, color=orange, label="ResNet (corruption-trained)")
-        axp.barh(y + h / 2, res["lg"]["prob"], height=h, color=blue, label="LeadGuard (LG-EDL)")
+        axp.barh(y + h / 2, res["lg"]["prob"], height=h, color=blue, label="LG-EDL")
         for i in range(len(CLASSES)):
             axp.plot([res["base"]["thr"][i]] * 2, [i - h, i], color=ink, lw=1.1)
             axp.plot([res["lg"]["thr"][i]] * 2, [i, i + h], color=ink, lw=1.1)
@@ -101,7 +101,7 @@ def main() -> None:
             axp.spines[s].set_visible(False)
         pb = [c for c, v in zip(CLASSES, res["base"]["pred"]) if v]
         pl = [c for c, v in zip(CLASSES, res["lg"]["pred"]) if v]
-        axp.set_title(f"{title}\nResNet: {' + '.join(pb) or 'none'};  LeadGuard: {' + '.join(pl) or 'none'}",
+        axp.set_title(f"{title}\nResNet: {' + '.join(pb) or 'none'};  LG-EDL: {' + '.join(pl) or 'none'}",
                       loc="left", fontsize=8)
 
     axb = fig.add_subplot(gs[0, 1])

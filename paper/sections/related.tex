@@ -1,59 +1,50 @@
 \section{Related Work}
 \label{sec:related}
 
-\subsection{Classification from reduced and missing leads}
-The question of how much of the twelve-lead ECG a classifier really needs was put to the community by the
-PhysioNet/Computing in Cardiology Challenge 2021, \emph{Will Two Do?}, which asked whether reduced-lead
-recordings retain the diagnostic information of the full twelve leads \cite{reyna2021willtwodo}. The winning
-entry, an ensemble of residual convolutional networks with a multi-head attention mechanism, ranked first in every
-lead configuration, with nearly unchanged scores from twelve down to two leads on the hidden validation set
-\cite{nejedly2021cinc,nejedly2022ensemble}. In representation learning, Oh \emph{et al.}\ pre-train ECG encoders with random lead
-masking so that the learned features do not depend on a fixed set of leads \cite{oh2022leadagnostic}.
+\subsection{Classification From Reduced and Missing Leads}
+The PhysioNet/Computing in Cardiology Challenge 2021 asked whether reduced-lead recordings retain the diagnostic
+information of the full twelve leads \cite{reyna2021willtwodo}. The winning entry, an ensemble of residual
+convolutional networks with multi-head attention, ranked first in every lead configuration, with scores on the
+hidden validation set that changed little from twelve to two leads \cite{nejedly2021cinc,nejedly2022ensemble}. Oh
+\emph{et al.} pre-train ECG encoders with random lead masking so that the learned features do not depend on a fixed
+lead set \cite{oh2022leadagnostic}, and in multimodal learning, ModDrop trains networks with whole input channels
+dropped at random so that they keep working when a modality is missing \cite{neverova2016moddrop}. In these works
+the model is told, or trained to expect, that some inputs are absent. In our setting the input is always a
+twelve-lead array and a failed lead arrives as zeros, a constant or noise; the question is whether an explicit
+quality estimate adds anything once training already includes such failures.
 
-These works share a premise: the model is told, or trained to expect, that some leads are absent. Our setting
-differs in two ways. First, failure is unannounced: the input is always a twelve-lead array, and a failed lead
-arrives as zeros, a flat line or noise. Second, our aim is not a better reduced-lead classifier but a controlled
-attribution: given that training already includes lead failure, as in lead masking, does an explicit per-lead
-quality estimate that gates the attention add anything? Our answer, that the augmentation carries almost all of
-the benefit, is consistent with the success of masking-based training in this prior work.
+\subsection{ECG Signal Quality Assessment}
+Signal quality indices were developed to decide whether an ECG can be interpreted and to suppress false alarms.
+The PhysioNet/Computing in Cardiology Challenge 2011 asked for algorithms that judge, while the patient is still
+present, whether a 12-lead ECG recorded with a mobile phone is of acceptable quality \cite{silva2011challenge}.
+Clifford \emph{et al.} combined several quality indices to classify the clinical acceptability of 12-lead ECGs
+\cite{clifford2012sqi}, and Behar \emph{et al.} used quality indices to reduce false arrhythmia alarms
+\cite{behar2013sqi}. These methods assess a recording or a lead as a separate step. Our quality assessor is a small
+learned per-lead network trained on simulated corruption, and its output is used inside the classifier, to weight
+attention and pooling, rather than to accept or reject a recording.
 
 \subsection{Benchmarks on PTB-XL}
-Strodthoff \emph{et al.}\ established the reference benchmark for PTB-XL with its recommended patient-level folds;
-convolutional networks, in particular ResNet- and Inception-based architectures, performed best across tasks
-\cite{strodthoff2021benchmark}. We adopt the same folds, label definition and 100\,Hz signal. Our models are
-trained under a deliberately small, shared budget and do not reach the benchmark's absolute scores
-(Section~\ref{sec:res-clean}); every comparison in this paper is therefore relative, between models trained
-identically.
+Strodthoff \emph{et al.} established the reference benchmark for PTB-XL with its recommended patient-level folds;
+ResNet- and Inception-based convolutional networks performed best across tasks \cite{strodthoff2021benchmark}. We use
+the same folds, label definition and 100\,Hz signal. Our models are trained under a small shared budget and do not
+reach the benchmark's absolute scores (Section~\ref{sec:res-clean}), so all comparisons in this paper are between
+models trained identically.
 
-\subsection{Evidential deep learning and its critics}
-Evidential deep learning places a Dirichlet distribution over class probabilities, interprets the network
-outputs as evidence in the sense of subjective logic, and reads uncertainty from the total amount of evidence,
-all from a single deterministic network \cite{sensoy2018edl}. Its original evaluation reported strong
-out-of-distribution detection and robustness to adversarial perturbation. Its theoretical footing has since been
-questioned. Bengs \emph{et al.}\ showed that the loss functions used to train such second-order predictors do not
-incentivise them to represent their epistemic uncertainty faithfully \cite{bengs2022pitfalls}. Shen
-\emph{et al.}\ sharpened this analysis across many evidential objectives, found that the learned epistemic
-uncertainty does not vanish even with infinite data, and argued that evidential models behave more like
-energy-based out-of-distribution detectors, which can still perform well on downstream tasks despite poor
-uncertainty quantification \cite{shen2024mirage}.
+\subsection{Uncertainty Under Distribution Shift}
+Ovadia \emph{et al.} compared uncertainty methods under dataset shift and found that the quality of predictive
+uncertainty degrades as the shift increases \cite{ovadia2019trust}. Evidential deep learning places a Dirichlet
+distribution over class probabilities, treats the network outputs as evidence and reads uncertainty from the total
+evidence, all from one deterministic network \cite{sensoy2018edl}; its original evaluation reported good
+out-of-distribution detection and robustness to adversarial perturbation. Bengs \emph{et al.} showed that the loss
+functions used to train such second-order predictors do not give them an incentive to represent epistemic
+uncertainty faithfully \cite{bengs2022pitfalls}, and Shen \emph{et al.} extended the analysis to many evidential
+objectives, finding that the learned epistemic uncertainty does not vanish even with infinite data
+\cite{shen2024mirage}. Simulated lead failure is a shift whose type and severity are controlled exactly, and
+removing a lead cannot add information about the diagnosis, which makes it a direct test of whether an evidential
+uncertainty responds to lost information.
 
-Our results add a concrete, applied data point to this debate. Lead failure is a structured loss of information
-whose severity we control exactly, and the evidential uncertainty of our model does not track it
-(Section~\ref{sec:res-edl}). Unlike in an out-of-distribution benchmark, a recording with failed leads
-contains strictly less information than the same recording intact, so an uncertainty measure that stays flat
-as leads disappear is hard to defend.
-
-\subsection{Calibration and selective prediction}
-Modern networks are often poorly calibrated, and a single temperature fitted on held-out data is a simple and
-effective remedy \cite{guo2017calibration}; we apply it to every sigmoid model so that calibration comparisons
-with the evidential head are fair. Selective classification lets a classifier abstain to reach a target risk;
-thresholding the network's own maximum class probability is already a strong rejection rule
-\cite{geifman2017selective}. Our confidence score is the multi-label analogue of that rule, and our
-risk--coverage results show that it matches the evidential uncertainty (Section~\ref{sec:res-edl}).
-
-\subsection{What this study adds}
-We do not propose a new architecture. We contribute a controlled ablation that separates three ingredients that
-are usually introduced together (training with lead failure, quality-gated lead attention and evidential
-abstention), evaluates them on identical, deterministically corrupted test data, controls for the accuracy of
-the quality estimate with an oracle, and reports paired confidence intervals. The value of the study lies in
-which of these ingredients survive that separation.
+\subsection{Calibration and Selective Prediction}
+A single temperature fitted on held-out data is a simple and effective calibration method for modern networks
+\cite{guo2017calibration}. Selective classification lets a classifier abstain in order to reach a target risk, and
+thresholding the network's own maximum class probability is a strong rejection rule \cite{geifman2017selective}. The
+probability-based score used here (Section~\ref{sec:setup-metrics}) is a multi-label version of that rule.

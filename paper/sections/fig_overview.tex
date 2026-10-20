@@ -17,7 +17,7 @@
   \node[box, right=of fail, text width=2.2cm] (enc) {\textbf{Per-lead encoder}\\ shared ResNet-1D\\ + lead embedding\\ $\mathbf{h}_j\in\mathbb{R}^{128}$};
   \node[lg, right=of enc, text width=2.45cm] (mala) {\textbf{Lead attention}\\ 2 layers, 4 heads\\ key bias $\log q_j$\\ masked if $q_j<0.02$};
   \node[lg, right=of mala, text width=1.65cm] (pool) {\textbf{Pooling}\\ weighted by $q_j$\\ $\rightarrow\ \mathbf{z}$};
-  \node[lg, right=of pool, text width=2.0cm] (head) {\textbf{Evidential head}\\ Beta$(\alpha_k,\beta_k)$\\ per class $\rightarrow$\\ $p_k$ and $U$};
+  \node[lg, right=of pool, text width=2.0cm] (head) {\textbf{Evidential head}\\ Beta$(\alpha_c,\beta_c)$\\ per class $\rightarrow$\\ $p_c$ and $U$};
   \node[box, right=of head, text width=1.75cm, draw=failred, line width=0.6pt] (abst) {\textbf{Abstain} if\\ $U>\tau$ or $\sum_j q_j<3$\\ else 5 labels};
 
   \node[lg, above=0.6cm of mala, text width=5.2cm, minimum height=0.75cm] (sqa)
@@ -41,9 +41,9 @@
   \node[note, below=0.3cm of fail, text width=4.2cm, xshift=1.2cm]
        {\textbf{Baselines} receive the same corrupted ECG (removed leads set to zero) and ignore $q$};
 \end{tikzpicture}
-\caption{The evaluated pipeline. Leads fail by simulation, in training and at test time. A frozen quality assessor
-scores every lead; its score $q_j$ biases the lead-attention keys, weights the pooling, and drives one of the two
-abstention rules. The ablation (bottom) removes the gating or swaps the evidential head for a sigmoid head; the
+\caption{The evaluated pipeline. Lead failure is simulated in training and at test time. A frozen quality assessor
+scores every lead; its score $q_j$ biases the lead-attention keys, weights the pooling and enters one of the two
+abstention rules. The ablations (bottom) remove the gating or replace the evidential head with a sigmoid head. The
 baselines receive the same corrupted ECG, with removed leads set to zero.}
 \label{fig:overview}
 \end{figure*}

@@ -1,36 +1,42 @@
 \section{Limitations}
 \label{sec:limitations}
 
-\emph{One dataset.} All results come from PTB-XL, a single retrospective collection, used here in its 100\,Hz
-version. Whether the conclusions transfer to other populations, devices, sampling rates and label sets is untested.
+\emph{One dataset.} All results come from PTB-XL, a single retrospective collection, used in its 100\,Hz version.
+Transfer to other populations, devices, sampling rates and label sets was not tested, and results were not stratified
+by sex or age.
 
-\emph{Simulated failures only.} Every lead failure in this study is simulated. Removed and flatlined leads are
-idealised: they are exactly zero or exactly constant, and therefore trivially detectable. Real recordings fail
-in subtler ways that we did not model, including intermittent electrode contact, motion artifacts with
-non-stationary spectra, mains interference and swapped electrode cables \cite{batchvarov2007incorrect}, which
-yields a plausible-looking but wrong signal rather than a missing one.
+\emph{Simulated, in-distribution failures.} Every failure is simulated, and every test failure type also occurs in
+training with parameters from the same ranges; only the number of affected leads can exceed the training range. This
+favours corruption-trained models and does not test robustness to failures that training did not anticipate. Removed
+and flatlined leads are idealised and easy to detect. Real recordings fail in other ways, including intermittent
+contact, motion artifacts with non-stationary spectra, mains interference and swapped cables, which give a
+plausible but wrong signal \cite{batchvarov2007incorrect}. PTB-XL annotates baseline drift, static and burst noise
+and electrode problems for some records \cite{ptbxl103}; we did not use these annotations, which would allow a test on
+real artifacts.
 
-\emph{The quality assessor was judged against our own simulation.} Its targets are the severities of
-Section~\ref{sec:data-failure}, which encode our design choices, for example that wander with an amplitude ratio
-above one makes a lead unreliable. Its high agreement shows that it learned these rules, not that it would judge
-real artifacts the way a clinician would. EMG at the test SNR lies exactly on the reliability boundary, where its
-agreement drops to \sqaEmgTestCorrupted{} of the corrupted leads. Real, subtle artifacts may behave differently,
-and soft gating, which our near-binary simulation barely exercised, might matter more there.
+\emph{No clean-trained gated models.} The gated and evidential variants were trained only with corruption, so the
+study measures what these components add to corruption training, not what they contribute without it
+(Section~\ref{sec:discussion}).
 
-\emph{Limited seeds and budget.} Only the two models of the main comparison were trained with three seeds; the
-ablation variants are single runs, so differences between them of the order of 0.01 macro-AUROC cannot be
-ranked. No hyperparameters were tuned and training was capped at 15 epochs, which keeps the comparison fair but
-leaves absolute performance below the published benchmark; stronger models might change the size, though we see
-no reason for the direction, of the effects.
+\emph{Quality labels from our own rules.} The assessor's targets are the severities of
+Section~\ref{sec:data-failure}, which encode design choices such as treating wander with an amplitude ratio of one
+or more as unreliable. Its high agreement shows that it learned these rules, not that it would judge real artifacts
+as a clinician would. At the test SNR, EMG lies exactly on the reliability boundary, where agreement drops to
+\sqaEmgTestCorrupted{} of the corrupted leads.
 
-\emph{Statistical scope.} The paired bootstrap intervals are reported per condition, without correction for
-multiple comparisons, and the conditions share test records.
+\emph{Seeds, budget and preprocessing.} Only the two directly compared models had three seeds; the ablation variants
+are single runs, so differences of about 0.01 macro-AUROC between them cannot be ranked. No hyperparameters were tuned
+and training was capped at 15 epochs, which leaves absolute performance below the published benchmark; stronger
+models may change the size of the effects. Checkpoints were selected on clean validation data, and per-lead
+standardisation removes absolute amplitude for all models alike, which affects voltage-based diagnoses such as
+hypertrophy.
 
-\emph{One evidential variant.} We evaluated a single evidential formulation (the per-class cross-entropy variant),
-trained only with corruption and without temperature scaling. Other evidential objectives, ensembles or
-Monte-Carlo dropout were not compared, so the illusion of certainty is demonstrated for this model, not for
-uncertainty estimation in general.
+\emph{Statistical scope.} The bootstrap intervals are per condition, uncorrected for multiple comparisons, share test
+records and do not include training variability.
 
-\emph{No clinical validation.} The system is a research prototype. The illustrative case and the demonstration use
-hand-picked records on which both models are correct with all leads, and nothing here has been validated in a
-clinical setting.
+\emph{One uncertainty method.} We evaluated one evidential formulation, trained only with corruption and without
+temperature scaling, and did not compare ensembles or Monte Carlo dropout. Per-condition summaries of $s_p$ were not
+recorded. The lack of response of $U$ to lead loss is therefore shown for this model only.
+
+\emph{No clinical validation.} The system is a research prototype. The example record was selected from records on
+which both models are correct with all leads, and nothing here has been validated clinically.

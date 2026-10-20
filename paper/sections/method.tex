@@ -4,24 +4,25 @@
 All neural models map a (possibly corrupted) record $\mathbf{x}\in\mathbb{R}^{12\times1000}$ to five class
 probabilities. The quality-aware models additionally receive a per-lead reliability vector
 $\mathbf{q}\in[0,1]^{12}$; every other model ignores it and sees removed leads as zeros. Table~\ref{tab:models}
-summarises the nine variants.
+summarises the nine variants. We call the quality-gated models LG (after LeadGuard, the name of the code
+base): LG-hard and LG-soft have a sigmoid head, and LG-EDL has the evidential head.
 
 \begin{table}[t]
 \centering
-\caption{The evaluated models. ``Missing leads'' states how a failed lead reaches the model. Seeds: number of
+\caption{The evaluated models. ``Failed leads'' states how a failed lead reaches the model. Seeds: number of
 independent training runs.}
 \label{tab:models}
 \begin{adjustbox}{max width=\columnwidth}
 \begin{tabular}{@{}llccc@{}}
 \toprule
-Model & Missing leads & Corrupt.\ training & Params & Seeds \\
+Model & Failed leads & Corrupt.\ training & Params & Seeds \\
 \midrule
-XGBoost (per-lead statistics) & NaN features & -- & -- & 1 \\
+XGBoost (per-lead statistics) & missing features & no & -- & 1 \\
 MLP & zero-filled & yes & \paramsMlp & 1 \\
 ResNet-1D, clean-trained & zero-filled & no & \paramsRes & 1 \\
 ResNet-1D, corruption-trained & zero-filled & yes & \paramsRes & 3 \\
 Patch Transformer & zero-filled & yes & \paramsTrans & 1 \\
-ResNet + lead attention (un-gated) & zero-filled & yes & \paramsResAttn & 1 \\
+Un-gated lead attention & zero-filled & yes & \paramsResAttn & 1 \\
 LG-hard (binary mask) & $\mathbf{1}[q\ge0.5]$ & yes & \paramsLgHard & 1 \\
 LG-soft (soft gating) & $q$ & yes & \paramsLgSoft & 1 \\
 LG-EDL (soft gating + evidential head) & $q$ + abstention & yes & \paramsLgEdl & 3 \\
@@ -40,7 +41,7 @@ corruption of Section~\ref{sec:data-train}, drawn afresh for every batch, using 
 soft target $q^\ast_j=1-s_j$, for \sqaEpochs{} epochs with AdamW (learning rate $10^{-3}$, weight decay
 $10^{-2}$), cosine decay and batches of 128; the epoch with the lowest validation loss is kept. It is then
 frozen. During classifier training and at test time it scores
-the \emph{corrupted} signal, exactly as it would in deployment; no classifier ever sees the true severities.
+the corrupted signal, as it would in use; no classifier receives the true severities.
 
 \subsection{Per-lead encoder}
 \label{sec:method-encoder}
@@ -61,7 +62,7 @@ the keys:
 \label{eq:attn}
 \end{equation}
 \begin{equation}
-b_j=\begin{cases}\log\max(q_j,10^{-6}) & \text{if } q_j\ge0.02,\\ -10^{9} & \text{if } q_j<0.02,\end{cases}
+b_j=\begin{cases}\log q_j & \text{if } q_j\ge0.02,\\ -10^{9} & \text{if } q_j<0.02,\end{cases}
 \label{eq:bias}
 \end{equation}
 with the softmax over keys $j$ and $d_k=32$. A lead of reliability $q_j$ thus has its attention weight scaled by
@@ -72,7 +73,8 @@ tokens $\mathbf{h}'_j$ are pooled with the same weights,
 \label{eq:pool}
 \end{equation}
 If every lead of a record falls below the floor, the lead with the highest $q_j$ is kept with bias 0 and weight 1,
-so the output is always defined.
+so the output is always defined. Because Eq.~\eqref{eq:pool} is a weighted mean, the scale of $\mathbf{z}$ does not
+depend on how many leads remain.
 
 \emph{Exact invariance.} If lead $j$ is below the floor and at least one lead is not, the output does not depend
 on $\mathbf{x}_j$ at all: its token enters no other token's update because its attention weight is exactly zero
@@ -80,7 +82,7 @@ in floating point ($e^{-10^{9}}$ underflows to 0), its own output token is poole
 encoder, layer normalisation and evaluation-mode batch normalisation never mix leads. The released tests check
 this to within $10^{-5}$ by replacing such leads with large random noise.
 
-The three gating variants share this code and differ only in $\mathbf{q}$: \emph{soft} gating uses the
+The three variants share this code and differ only in $\mathbf{q}$: \emph{soft} gating uses the
 assessor's score, \emph{hard} gating uses $\mathbf{1}[q_j\ge0.5]$ (ties in the all-floored case broken by the soft
 score), and the \emph{un-gated} control sets $q_j\equiv1$, which reduces Eqs.~\eqref{eq:attn}--\eqref{eq:pool} to
 ordinary self-attention with mean pooling.
@@ -90,23 +92,23 @@ ordinary self-attention with mean pooling.
 The sigmoid head is a linear layer from $\mathbf{z}$ to five logits, trained with binary cross-entropy.
 
 The \emph{Beta-evidential head} maps $\mathbf{z}$ to ten non-negative evidence values through a linear layer and
-a softplus, $e^{+}_k$ and $e^{-}_k$ for each class $k$, and sets $\alpha_k=e^{+}_k+1$, $\beta_k=e^{-}_k+1$. The
+a softplus, $e^{+}_c$ and $e^{-}_c$ for each class $c$, and sets $\alpha_c=e^{+}_c+1$, $\beta_c=e^{-}_c+1$. The
 class is then described by a Beta distribution over its probability, with
 \begin{equation}
-p_k=\frac{\alpha_k}{\alpha_k+\beta_k},\qquad u_k=\frac{2}{\alpha_k+\beta_k},\qquad U=\frac{1}{5}\sum_{k=1}^{5}u_k .
+p_c=\frac{\alpha_c}{\alpha_c+\beta_c},\qquad u_c=\frac{2}{\alpha_c+\beta_c},\qquad U=\frac{1}{5}\sum_{c=1}^{5}u_c .
 \label{eq:edl}
 \end{equation}
-With no evidence ($\alpha_k=\beta_k=1$) the uncertainty $u_k$ is 1; it shrinks as evidence accumulates. Training
+With no evidence ($\alpha_c=\beta_c=1$) the uncertainty $u_c$ is 1; it shrinks as evidence accumulates. Training
 minimises, per class, the expected binary cross-entropy under the Beta distribution plus a regulariser that
 removes misleading evidence,
 \begin{align}
-\mathcal{L}_k={}&y_k\big[\psi(\alpha_k+\beta_k)-\psi(\alpha_k)\big]\nonumber\\
-&+(1-y_k)\big[\psi(\alpha_k+\beta_k)-\psi(\beta_k)\big]\nonumber\\
-&+\lambda_t\,\mathrm{KL}\!\left(\mathrm{Beta}(\tilde\alpha_k,\tilde\beta_k)\,\|\,\mathrm{Beta}(1,1)\right),
+\mathcal{L}_c={}&y_c\big[\psi(\alpha_c+\beta_c)-\psi(\alpha_c)\big]\nonumber\\
+&+(1-y_c)\big[\psi(\alpha_c+\beta_c)-\psi(\beta_c)\big]\nonumber\\
+&+\lambda_t\,\mathrm{KL}\!\left(\mathrm{Beta}(\tilde\alpha_c,\tilde\beta_c)\,\|\,\mathrm{Beta}(1,1)\right),
 \label{eq:edlloss}
 \end{align}
-where $\psi$ is the digamma function, $(\tilde\alpha_k,\tilde\beta_k)=(1,\beta_k)$ if $y_k=1$ and
-$(\alpha_k,1)$ if $y_k=0$, and $\lambda_t=\min(1,t/10)$ for epoch $t=0,1,\dots$ The loss is summed over classes
+where $\psi$ is the digamma function, $(\tilde\alpha_c,\tilde\beta_c)=(1,\beta_c)$ if $y_c=1$ and
+$(\alpha_c,1)$ if $y_c=0$, and $\lambda_t=\min(1,t/10)$ for epoch $t=0,1,\dots$ The loss is summed over classes
 and averaged over the batch. This is the cross-entropy variant (Eq.~4) of evidential deep learning
 \cite{sensoy2018edl}, applied per class with a two-outcome Dirichlet, i.e.\ a Beta distribution, so
 that it suits multi-label diagnosis; the original work used a squared-error variant in its own experiments. We
@@ -121,20 +123,23 @@ U>\tau\qquad\text{or}\qquad\textstyle\sum_{j=1}^{12}q_j<3,
 \label{eq:abstain}
 \end{equation}
 that is, when the evidential head reports high uncertainty or when less than about three leads' worth of usable
-signal remains. The threshold $\tau$ is the 95th percentile of $U$ on the clean validation fold, so the first
-rule rejects 5\% of clean validation records by construction.
+signal remains. The threshold $\tau$ is the 95th percentile of $U$ on the clean validation fold
+(\uThresholdMean{} on average over the three seeds), so the first rule rejects 5\% of clean validation records
+by construction. The lead-count limit of three was fixed in the project specification before training. For
+removal alone, $\sum_j q_j$ is close to the number of intact leads, so the rule fires between $k=8$ and $k=10$ on
+our test grid.
 
 \subsection{Baselines}
 \label{sec:method-baselines}
 \emph{XGBoost} receives eight statistics per lead (mean, standard deviation, minimum, maximum, skewness,
 kurtosis, dominant frequency and peak-to-peak amplitude; 96 features). A flat lead (standard deviation below
 $10^{-6}$) has all its features set to missing, which gradient-boosted trees handle natively. One binary
-classifier per class is trained (at most 500 trees of depth 4, learning rate 0.05, row and column subsampling 0.8,
+classifier per class is trained on clean records (at most 500 trees of depth 4, learning rate 0.05, row and column subsampling 0.8,
 early stopping after 30 rounds without improvement in validation AUROC). The \emph{MLP} flattens the record into
 12\,000 inputs, followed by layers of 512 and 128 units with GELU and dropout 0.3. The \emph{ResNet-1D} treats the
 twelve leads as input channels: a stem convolution to 64 channels and four residual stages of 64, 64, 128 and 128
 channels (stride 2 each), global average pooling and a linear layer to 128. The \emph{patch Transformer} cuts the
 record into 40 patches of 25 samples across all twelve leads, embeds them, adds learned positions and applies the
-same two-layer, four-head, $d=128$ encoder as the lead attention, followed by mean pooling. The un-gated
-\emph{ResNet + lead attention} is the lead-attention model with $q_j\equiv1$ (Section~\ref{sec:method-mala}), so
+same two-layer, four-head, $d=128$ encoder as the lead attention, followed by mean pooling. The \emph{un-gated
+lead attention} model is the lead-attention model with $q_j\equiv1$ (Section~\ref{sec:method-mala}), so
 it differs from LG-soft only in the gating.
