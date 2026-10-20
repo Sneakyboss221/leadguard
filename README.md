@@ -9,8 +9,6 @@ A controlled ablation on PTB-XL, with code, results, paper and an offline demo.
 
 [Paper source](paper/) · [Trained models and PDF (v1.0 release)](https://github.com/Sneakyboss221/leadguard/releases/tag/v1.0) · [Specification](SPEC.md) · [Design decisions](DECISIONS.md)
 
-> Research prototype. Not a medical device and not for clinical use.
-
 ---
 
 ## The question
@@ -132,7 +130,7 @@ python figures.py
 ### Full reproduction on PTB-XL
 
 Download [PTB-XL v1.0.3](https://physionet.org/content/ptb-xl/1.0.3/) from PhysioNet (about 2 GB). The paper's
-13 training runs took about 25 minutes on one GPU.
+13 training runs took about 3 hours on one GPU.
 
 ```bash
 python data.py --name ptbxl --root PATH/TO/ptb-xl-1.0.3
