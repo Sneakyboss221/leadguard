@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below."
+type: software
+title: "LeadGuard: quality gating and evidential abstention for ECG classification under lead failure"
+authors:
+  - family-names: "Patibanda"
+    given-names: "Sanjit"
+    affiliation: "Vellore Institute of Technology, Chennai"
+repository-code: "https://github.com/Sneakyboss221/leadguard"
+license: MIT
+version: "1.0"
+date-released: "2026-10-20"
+keywords:
+  - ECG
+  - PTB-XL
+  - lead failure
+  - signal quality
+  - evidential deep learning
+  - selective classification

@@ -51,7 +51,7 @@ def main() -> None:
     plt.rcParams.update({"font.family": "serif", "font.serif": ["Times New Roman", "Times", "STIXGeneral"],
                          "mathtext.fontset": "stix", "font.size": 8, "axes.titlesize": 8.5, "legend.fontsize": 7,
                          "xtick.labelsize": 7.5, "ytick.labelsize": 7.5})
-    blue, orange, ink, muted, off = "#2a6fca", "#d9622b", "#16171a", "#7a7b80", "#b3b2ac"
+    blue, orange, ink, off = "#2a6fca", "#d9622b", "#16171a", "#b3b2ac"
     grid_minor, grid_major = "#f6dedb", "#ebb9b4"
 
     fig = plt.figure(figsize=(7.16, 2.9), constrained_layout=True)

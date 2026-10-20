@@ -37,6 +37,7 @@ from utils import CLASSES, FS, LEADS, REPO_DIR
 
 UI_FILE = REPO_DIR / "demo" / "index.html"
 EMG_SNR_DB = 10.0  # same SNR as the EMG test condition
+MAX_BODY_BYTES = 100_000  # a predict request is well under 1 kB
 CLASS_NAMES = {"NORM": "Normal ECG", "MI": "Myocardial infarction", "STTC": "ST/T change",
                "CD": "Conduction disturbance", "HYP": "Hypertrophy"}
 BASELINES = {"resnet_c1": "ResNet, corruption-trained", "resnet_c0": "ResNet, clean-trained"}
@@ -117,7 +118,10 @@ class Demo:
 
     @torch.no_grad()
     def predict(self, req: dict) -> dict:
-        sample = self.samples[int(req["sample"])]
+        i = int(req["sample"])
+        if not 0 <= i < len(self.samples):
+            raise ValueError(f"'sample' must be in 0..{len(self.samples) - 1}")
+        sample = self.samples[i]
         on = np.array(req["on"], dtype=bool)
         if on.shape != (12,):
             raise ValueError("'on' needs 12 values")
@@ -189,7 +193,10 @@ def make_handler(demo: Demo):
             if self.path != "/api/predict":
                 return self._json({"error": "not found"}, 404)
             try:
-                req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+                n = int(self.headers.get("Content-Length", 0))
+                if n > MAX_BODY_BYTES:
+                    return self._json({"error": "request body too large"}, 413)
+                req = json.loads(self.rfile.read(n))
                 self._json(demo.predict(req))
             except (KeyError, ValueError, IndexError, TypeError) as e:
                 self._json({"error": f"bad request: {e}"}, 400)

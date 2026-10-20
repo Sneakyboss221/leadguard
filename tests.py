@@ -3,6 +3,8 @@
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
@@ -11,7 +13,9 @@ from sklearn.metrics import roc_auc_score
 import corrupt
 from baseline_xgb import FEATURES, lead_features
 from data import load_dataset
+from evaluate import COVERAGES, apply_temperature, fit_temperature, risk_coverage, tune_thresholds
 from models import MODELS, Q_FLOOR, build_model, count_params, edl_loss, kl_anneal
+from train import check_status, ckpt_paths, run_config
 from utils import set_seed
 
 B, T = 4, 1000
@@ -156,6 +160,40 @@ def test_fixed_test_corruption_deterministic():
         a, sa = corrupt.fixed_test_corruption(x, cond, seed)
         b, sb = corrupt.fixed_test_corruption(x, cond, seed)
         assert torch.equal(a, b) and torch.equal(sa, sb), cond
+
+
+def test_risk_coverage_deterministic_and_ordered():
+    err = np.array([0.9, 0.1, 0.5, 0.2], dtype=np.float32)
+    unc = np.array([0.4, 0.1, 0.3, 0.2], dtype=np.float32)
+    rc_a = risk_coverage(err, unc)
+    rc_b = risk_coverage(err, unc)
+    assert rc_a == rc_b
+    assert [c for c, _ in rc_a] == list(COVERAGES)
+    assert all(c2 >= c1 for (c1, _), (c2, _) in zip(rc_a, rc_a[1:]))
+    assert rc_a[0][1] == pytest.approx(err[np.argmin(unc)])
+
+
+def test_temperature_and_threshold_sanity():
+    rng = np.random.default_rng(0)
+    y = (rng.random((200, 5)) > 0.5).astype(np.float32)
+    prob = np.clip(y * 0.75 + (1 - y) * 0.25 + rng.normal(0, 0.08, y.shape), 0.02, 0.98)
+    t = fit_temperature(prob, y)
+    tuned = apply_temperature(prob, t)
+    thr = tune_thresholds(tuned, y)
+    assert 0.01 <= float(thr.min()) <= float(thr.max()) <= 0.99
+    bce = lambda p: -np.mean(y * np.log(np.clip(p, 1e-6, 1 - 1e-6))
+                             + (1 - y) * np.log(np.clip(1 - p, 1e-6, 1 - 1e-6)))
+    assert bce(tuned) <= bce(prob) + 1e-6
+
+
+def test_checkpoint_config_mismatch_raises(tmp_path: Path):
+    cfg = run_config("mlp", 0, 1, "synthetic", False, 15, 128)
+    _, last = ckpt_paths(tmp_path, "mlp", 0, 1)
+    bad_cfg = dict(cfg)
+    bad_cfg["batch"] = 64
+    torch.save({"config": bad_cfg, "finished": False}, last)
+    with pytest.raises(RuntimeError, match="different setting"):
+        check_status(tmp_path, cfg)
 
 
 # 8. Overfit: lg_edl on 200 samples for 50 epochs reaches training macro-AUROC > 0.95

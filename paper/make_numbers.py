@@ -9,7 +9,6 @@ run, then mean (and sample std where there are 3 seeds) over seeds.
 from __future__ import annotations
 
 import argparse
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -224,7 +223,7 @@ def fig_certainty(R: Path, out: Path) -> None:
     abstain_rate.csv.
     """
     plt = paper_style()
-    blue, red, ink, muted, grid = "#2a6fca", "#b3263a", "#16171a", "#7a7b80", "#e6e4df"
+    blue, red, ink, grid = "#2a6fca", "#b3263a", "#16171a", "#e6e4df"
 
     rl = pd.read_csv(R / "random_loss.csv")
     rl = rl[rl.model == "lg_edl"].groupby(["seed", "n_missing"], as_index=False).macro_auroc.mean()

@@ -1,0 +1,29 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Unit and invariant tests
+        run: python -m pytest -q tests.py
+      - name: End-to-end run on synthetic data
+        run: |
+          python pretrain_sqa.py --data synthetic --epochs 10
+          python run_all.py --data synthetic --debug --only xgb_s0 resnet_s0_c1 lg_edl_s0_c1
+          python evaluate.py --data synthetic --debug --ckpt-dir checkpoints --out-dir results

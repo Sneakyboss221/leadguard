@@ -25,7 +25,7 @@ from data import load_dataset
 from evaluate import (ABSTAIN_QUANTILE, apply_temperature, fit_temperature, predict, tune_thresholds)
 from models import build_model
 from run_all import BATCH, EPOCHS
-from train import USES_Q, check_status, ckpt_paths, load_sqa_checked, run_config, run_name
+from train import check_status, ckpt_paths, load_sqa_checked, run_config, run_name
 from utils import CLASSES, REPO_DIR, get_device
 
 DEMO_RUNS = {"resnet_c0": ("resnet", 0, 0), "resnet_c1": ("resnet", 1, 0), "lg_edl": ("lg_edl", 1, 0)}
