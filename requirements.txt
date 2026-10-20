@@ -6,7 +6,5 @@ xgboost
 wfdb
 matplotlib
 seaborn
-streamlit
-altair
 tqdm
 pytest

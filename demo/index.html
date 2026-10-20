@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeadGuard · ECG lead-failure demo</title>
+<style>
+:root {
+  --bg: #f2f1ed;
+  --panel: #ffffff;
+  --ink: #141518;
+  --ink-2: #44454a;
+  --muted: #7a7b80;
+  --line: #dedcd5;
+  --line-2: #ecebe6;
+  --lg: #2a6fca;
+  --base: #d9622b;
+  --noise: #b67600;
+  --off: #b3b2ac;
+  --crit: #b3263a;
+  --crit-soft: #fbecee;
+  --paper: #fffbf9;
+  --grid: #f3d3d0;
+  --grid-strong: #e6aca7;
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --mono: "Cascadia Mono", "SF Mono", ui-monospace, Consolas, "Liberation Mono", monospace;
+  --ecg-h: clamp(380px, 58vh, 620px);
+  --on-ink: #ffffff;
+  --on-ink-2: #c9cace;
+  --warn-ink: #7a5a10;
+  --trace: #18181b;
+  --heat-0: 246, 248, 251;
+  --heat-1: 42, 111, 202;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #111214;
+  --panel: #1a1b1e;
+  --ink: #ebebe8;
+  --ink-2: #b8b9b6;
+  --muted: #8a8b8f;
+  --line: #2f3034;
+  --line-2: #26272b;
+  --lg: #5f9cec;
+  --base: #ee7d45;
+  --noise: #e3a633;
+  --off: #5e5f63;
+  --crit: #f0647a;
+  --crit-soft: #351c21;
+  --paper: #161516;
+  --grid: #2f2425;
+  --grid-strong: #4d3133;
+  --on-ink: #141518;
+  --on-ink-2: #4a4b50;
+  --warn-ink: #d9b86a;
+  --trace: #ecebe8;
+  --heat-0: 30, 32, 37;
+  --heat-1: 95, 156, 236;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14.5px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--lg); outline-offset: 2px; }
+h2, h3 { margin: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------------- header ---------------- */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 22px;
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.word { font-family: var(--serif); font-size: 23px; font-weight: 700; letter-spacing: -0.01em; }
+.desc { font-size: 14px; color: var(--ink-2); }
+.top-r { display: flex; align-items: center; gap: 14px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; justify-content: flex-end; }
+.top-r .warn { color: var(--warn-ink); }
+.busy { color: var(--muted); opacity: 0; transition: opacity .15s; }
+.busy.on { opacity: 1; }
+.ghost { border: 1px solid var(--line); background: var(--panel); border-radius: 5px; padding: 4px 10px; font-size: 12.5px; color: var(--ink-2); }
+.ghost:hover { border-color: var(--ink-2); color: var(--ink); }
+
+/* ---------------- layout ---------------- */
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr) 340px; gap: 14px; padding: 14px 22px 6px; align-items: start; }
+.col { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.pad { padding: 14px 16px; }
+.h { display: flex; align-items: baseline; gap: 9px; font-size: 15px; font-weight: 650; }
+.h .n { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 17px; color: var(--muted); }
+.h-sm { font-size: 13.5px; font-weight: 650; }
+.sub { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.row-between { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+/* ---------------- patient picker + settings ---------------- */
+aside.panel > section + section { border-top: 1px solid var(--line-2); }
+.group { margin-top: 10px; }
+.group-name { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; }
+.group-name b { font-weight: 600; }
+.group-name span { color: var(--muted); font-family: var(--mono); font-size: 11.5px; }
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 5px; padding: 4px 0; font-size: 13px; font-family: var(--mono); }
+.chip:hover { border-color: var(--ink-2); }
+.chip.active { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.picked { margin-top: 12px; font-size: 12.5px; color: var(--ink-2); }
+.field { margin-top: 12px; }
+.field:first-of-type { margin-top: 10px; }
+.field > label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; padding: 2px; background: var(--bg); }
+.seg button { border: 0; background: transparent; border-radius: 4px; padding: 5px 4px; font-size: 12.5px; color: var(--ink-2); line-height: 1.25; }
+.seg button.active { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.field .why { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.keys { font-size: 12px; color: var(--muted); line-height: 1.8; }
+kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; background: var(--panel); color: var(--ink-2); }
+
+/* ---------------- lead failure toolbar ---------------- */
+.scen { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.scen button { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 7px 10px; min-width: 0; }
+.scen button:hover { border-color: var(--ink-2); }
+.scen button.active { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.scen .t { display: block; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scen .d { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note { font-size: 12.5px; color: var(--ink-2); }
+
+/* ---------------- ECG ---------------- */
+.ecg-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 14px 16px 10px; flex-wrap: wrap; }
+.legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--ink-2); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 16px; height: 2px; vertical-align: middle; margin-right: 6px; }
+.ecg-body { padding: 0 16px 12px; }
+.ecg, .axis { display: grid; grid-template-columns: 50px minmax(0, 1fr) 96px; column-gap: 10px; }
+.ecg-col { display: grid; grid-template-rows: repeat(12, 1fr); height: var(--ecg-h); }
+.lead-btn { display: flex; align-items: center; justify-content: flex-end; gap: 6px; border: 0; background: transparent; padding: 0 3px;
+  font-weight: 650; font-size: 13.5px; border-radius: 4px; }
+.lead-btn:hover { background: var(--bg); }
+.lead-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); flex: none; }
+.lead-btn.off { color: var(--off); text-decoration: line-through; }
+.lead-btn.off .dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--off); }
+.lead-btn.noisy { color: var(--noise); }
+.lead-btn.noisy .dot { background: var(--noise); }
+.plot { position: relative; height: var(--ecg-h); border: 1px solid var(--grid-strong); overflow: hidden; background-color: var(--paper);
+  background-image:
+    linear-gradient(to right, var(--grid-strong) 1px, transparent 1px),
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: 10% 100%, 2% 100%, 100% calc(100% / 72); }
+.plot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.trace { fill: none; stroke-width: 1.3; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.trace.ok { stroke: var(--trace); }
+.trace.noisy { stroke: var(--noise); }
+.trace.off { stroke: var(--off); stroke-dasharray: 4 4; }
+.scalebar { position: absolute; right: 8px; top: calc(100% / 24 - 100% / 36); height: calc(100% / 36); border-left: 2px solid var(--ink); }
+.scalebar span { position: absolute; left: 5px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--ink-2); white-space: nowrap;
+  background: var(--paper); padding: 0 2px; }
+.q-cell { display: flex; align-items: center; gap: 6px; }
+.q-track { flex: 1; height: 7px; background: var(--line-2); border-radius: 4px; position: relative; overflow: hidden; }
+.q-fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--lg); transition: width .25s; }
+.q-fill.low { background: var(--noise); }
+.q-fill.masked { background: var(--off); }
+.q-val { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); width: 30px; text-align: right; }
+.ticks { position: relative; height: 16px; margin-top: 4px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.ticks span { position: absolute; transform: translateX(-50%); }
+.axis-r { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.axis-note { font-size: 11px; color: var(--muted); text-align: center; grid-column: 2; }
+
+/* ---------------- lower row: attention + test set ---------------- */
+.lower { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.heat { display: grid; grid-template-columns: 32px repeat(12, minmax(0, 1fr)); gap: 2px; font-size: 10.5px; margin-top: 12px; max-width: 360px; }
+.heat .lab { display: flex; align-items: center; justify-content: flex-end; padding-right: 4px; color: var(--ink-2); font-weight: 600; height: 20px; }
+.heat .colhead { justify-content: center; padding: 0; height: 18px; font-size: 9.5px; }
+.heat .cell { height: 20px; border-radius: 2px; }
+.heat .dead { color: var(--off); text-decoration: line-through; }
+.heat .cell.deadrow { opacity: .22; }
+.p-note { font-size: 12.5px; color: var(--ink-2); margin: 10px 0 0; }
+.chart { width: 100%; max-width: 470px; height: auto; display: block; margin-top: 8px; }
+.chart text { font-family: var(--mono); font-size: 10px; fill: var(--muted); }
+.chart-legend { display: flex; gap: 4px 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+.chart-legend i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 5px; }
+
+/* ---------------- results ---------------- */
+.truth { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); }
+.tl { display: inline-flex; gap: 6px; align-items: baseline; background: var(--ink); color: var(--on-ink); border-radius: 4px; padding: 2px 8px; font-weight: 650; font-size: 13px; }
+.tl small { font-weight: 400; color: var(--on-ink-2); font-size: 12px; }
+.banner { margin-top: 12px; border-left: 4px solid var(--crit); background: var(--crit-soft); border-radius: 0 6px 6px 0; padding: 9px 12px; font-size: 13px; }
+.banner b { display: block; color: var(--crit); letter-spacing: .06em; font-size: 12.5px; margin-bottom: 2px; }
+.models { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.model { border: 1px solid var(--line); border-top: 3px solid; border-radius: 6px; padding: 9px 11px; min-width: 0; }
+.model.lg { border-top-color: var(--lg); }
+.model.base { border-top-color: var(--base); }
+.model .who { font-size: 11.5px; color: var(--muted); }
+.model .name { font-size: 13px; font-weight: 650; line-height: 1.25; margin-bottom: 8px; }
+.preds { display: flex; flex-wrap: wrap; gap: 5px; min-height: 27px; }
+.pred { border: 1.5px solid var(--ink); border-radius: 4px; padding: 2px 7px; font-size: 13px; font-weight: 650; }
+.pred.wrong { border-style: dashed; color: var(--crit); border-color: var(--crit); }
+.pred.none { border-color: var(--line); color: var(--muted); font-weight: 500; }
+.model.abstained .preds { opacity: .4; }
+.verdict { font-size: 12.5px; margin-top: 7px; color: var(--ink-2); }
+.verdict.bad { color: var(--crit); }
+.ref { font-size: 11.5px; color: var(--muted); margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--line); }
+.ref.changed { color: var(--ink-2); }
+.ref.changed b { color: var(--ink); font-weight: 650; }
+.prob-legend { display: flex; gap: 12px; font-size: 12px; color: var(--ink-2); margin: 6px 0 12px; flex-wrap: wrap; }
+.prob-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+.prob-legend .tick { width: 2px; height: 12px; background: var(--ink); border-radius: 1px; vertical-align: -2px; }
+.prob-grid { display: grid; grid-template-columns: 92px minmax(0, 1fr); row-gap: 11px; column-gap: 10px; }
+.cls { font-size: 13px; font-weight: 650; line-height: 1.2; }
+.cls small { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); }
+.cls .true-mark { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 12px; color: var(--ink); margin-left: 4px; border-bottom: 1.5px solid var(--ink); }
+.bars { display: grid; gap: 4px; align-content: center; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 6px; align-items: center; }
+.bar { position: relative; height: 12px; background: var(--line-2); border-radius: 2px; }
+.bar .f { position: absolute; inset: 0 auto 0 0; border-radius: 2px; transition: width .25s; }
+.bar.b .f { background: var(--base); }
+.bar.l .f { background: var(--lg); }
+.bar.l.faded .f { opacity: .35; }
+.bar .thr { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
+.bar-row .v { font-family: var(--mono); font-size: 11px; color: var(--ink-2); text-align: right; }
+.meter { margin-top: 12px; }
+.meter-k { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; }
+.meter-k .v { font-family: var(--mono); font-size: 17px; font-weight: 650; }
+.meter-k .v.bad { color: var(--crit); }
+.track { position: relative; height: 9px; background: var(--line-2); border-radius: 5px; margin-top: 5px; }
+.track .f { position: absolute; inset: 0 auto 0 0; background: var(--lg); border-radius: 5px; transition: width .25s; }
+.track .f.bad { background: var(--crit); }
+.track .lim { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.meter-n { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
+.error { margin: 14px 22px 0; padding: 10px 14px; border-left: 4px solid var(--crit); background: var(--crit-soft); display: none; }
+
+/* ---------------- responsive ---------------- */
+@media (min-width: 1600px) {
+  .layout { grid-template-columns: 270px minmax(0, 1fr) 410px; }
+}
+@media (max-width: 1400px) {
+  .layout { grid-template-columns: 228px minmax(0, 1fr) 316px; gap: 12px; padding: 12px 14px 6px; }
+  .top { padding: 10px 14px; }
+  .scen .t { font-size: 13px; }
+  .desc { display: none; }
+}
+@media (max-width: 1150px) {
+  .layout { grid-template-columns: 228px minmax(0, 1fr); }
+  .results { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+}
+@media (max-width: 820px) {
+  .layout { grid-template-columns: minmax(0, 1fr); padding: 10px; }
+  .top { flex-direction: column; align-items: flex-start; }
+  .scen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ecg, .axis { grid-template-columns: 42px minmax(0, 1fr) 56px; column-gap: 6px; }
+  .q-val { display: none; }
+  .lower { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="word">LeadGuard</span>
+    <span class="desc">Does the diagnosis survive when ECG leads fail?</span>
+  </div>
+  <div class="top-r">
+    <span class="busy" id="busy">updating…</span>
+    <span id="dataTag">loading…</span>
+    <span class="warn">Research prototype · not for clinical use</span>
+    <button class="ghost" id="themeBtn" title="Switch light / dark (D)">Dark</button>
+    <button class="ghost" id="fsBtn" title="Full screen (F)">Full screen</button>
+  </div>
+</header>
+
+<div class="error" id="error"></div>
+
+<main class="layout">
+  <!-- 1: patient + settings -->
+  <aside class="panel">
+    <section class="pad">
+      <h2 class="h"><span class="n">1</span>Pick a patient</h2>
+      <div id="patients"></div>
+      <div class="picked" id="picked"></div>
+    </section>
+    <section class="pad">
+      <h2 class="h-sm">Settings</h2>
+      <div class="field">
+        <label>Lead quality q comes from</label>
+        <div class="seg" id="qualitySeg">
+          <button data-v="switches">Lead switches</button>
+          <button data-v="sqa">Quality checker</button>
+        </div>
+        <div class="why" id="qualityWhy"></div>
+      </div>
+      <div class="field">
+        <label>Baseline to compare with</label>
+        <div class="seg" id="baseSeg">
+          <button data-v="resnet_c1">Trained with<br>broken leads</button>
+          <button data-v="resnet_c0">Trained on<br>clean ECGs</button>
+        </div>
+        <div class="why" id="baseWhy"></div>
+      </div>
+    </section>
+    <section class="pad keys">
+      <kbd>←</kbd><kbd>→</kbd> patient · <kbd>1</kbd>–<kbd>5</kbd> failure<br>
+      <kbd>Q</kbd> quality source · <kbd>B</kbd> baseline<br><kbd>D</kbd> dark mode · <kbd>F</kbd> full screen
+    </section>
+  </aside>
+
+  <!-- 2: lead failure + ECG + lower row -->
+  <div class="col">
+    <section class="panel pad">
+      <div class="row-between">
+        <h2 class="h"><span class="n">2</span>Make leads fail</h2>
+        <span class="note" id="scenNote"></span>
+      </div>
+      <div class="scen" id="scenarios"></div>
+    </section>
+
+    <section class="panel">
+      <div class="ecg-head">
+        <div>
+          <h3 class="h-sm">12-lead ECG</h3>
+          <p class="sub" id="ecgSub"></p>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--trace)"></i>connected</span>
+          <span><i style="background:var(--noise)"></i>muscle noise</span>
+          <span><i style="border-top:2px dashed var(--off);height:0"></i>unplugged</span>
+        </div>
+      </div>
+      <div class="ecg-body">
+        <div class="ecg">
+          <div class="ecg-col" id="leadBtns"></div>
+          <div class="plot">
+            <svg id="ecgSvg" viewBox="0 0 1000 36" preserveAspectRatio="none" role="img" aria-label="12-lead ECG"></svg>
+            <div class="scalebar"><span>1 mV</span></div>
+          </div>
+          <div class="ecg-col" id="qCol"></div>
+        </div>
+        <div class="axis">
+          <div></div>
+          <div class="ticks" id="ticks"></div>
+          <div class="axis-r" id="qHead">q</div>
+          <div class="axis-note">time (s) · grid 0.2 s × 0.5 mV · click a lead name to unplug it</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="lower">
+      <section class="panel pad">
+        <h3 class="h-sm">Where LeadGuard looks</h3>
+        <p class="sub">Lead-to-lead attention, last layer, mean over heads</p>
+        <div class="heat" id="heat"></div>
+        <p class="p-note">Row: the lead being read. Column: the lead it borrows from. An unplugged lead (q below 0.02) gets exactly zero attention, so its column goes blank, and its own row is left out of the final answer (faded).</p>
+      </section>
+      <section class="panel pad" id="testsetPanel">
+        <h3 class="h-sm">Across the whole test set</h3>
+        <p class="sub">Macro-AUROC with k random leads unplugged</p>
+        <svg class="chart" id="chart" viewBox="0 0 360 210" role="img" aria-label="Macro-AUROC versus unplugged leads"></svg>
+        <div class="chart-legend" id="chartLegend"></div>
+        <p class="p-note">The patients above were picked because both models get them right with all 12 leads. This curve is the overall picture, from <span class="mono">results/random_loss.csv</span> (3 draws per k; mean over seeds).</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- 3: results -->
+  <div class="col results">
+    <section class="panel pad">
+      <h2 class="h"><span class="n">3</span>Compare the answers</h2>
+      <div class="truth"><span>True diagnosis</span><span id="truth"></span></div>
+      <div id="banner"></div>
+      <div class="models">
+        <div class="model base" id="mBase"></div>
+        <div class="model lg" id="mLg"></div>
+      </div>
+    </section>
+
+    <section class="panel pad">
+      <h3 class="h-sm">Probability per class</h3>
+      <div class="prob-legend">
+        <span><i style="background:var(--base)"></i><span id="legBase">Baseline</span></span>
+        <span><i style="background:var(--lg)"></i>LeadGuard</span>
+        <span><i class="tick"></i>decision threshold</span>
+      </div>
+      <div class="prob-grid" id="probs"></div>
+    </section>
+
+    <section class="panel pad">
+      <h3 class="h-sm">Should LeadGuard answer at all?</h3>
+      <p class="sub">It abstains if either check fails (limits set on validation data).</p>
+      <div class="meter">
+        <div class="meter-k"><span>Usable signal Σq</span><span class="v" id="qsumV">–</span></div>
+        <div class="track"><div class="f" id="qsumF"></div><div class="lim" id="qsumLim"></div></div>
+        <div class="meter-n" id="qsumN"></div>
+      </div>
+      <div class="meter">
+        <div class="meter-k"><span>Uncertainty U</span><span class="v" id="uV">–</span></div>
+        <div class="track"><div class="f" id="uF"></div><div class="lim" id="uLim"></div></div>
+        <div class="meter-n" id="uN"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>Research prototype, not for clinical use. Lead failures are simulated; the models were trained on retrospective data (PTB-XL) and are not clinically validated.</footer>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const OFFSET = 3;  // mV between stacked leads; the CSS grid assumes 12 x 3 mV = 72 x 0.5 mV
+const CHEST = [6, 7, 8, 9, 10, 11], LIMB = [0, 1, 2, 3, 4, 5];
+const COLORS = { lg_edl: "var(--lg)", resnet_c1: "var(--base)", resnet_c0: "var(--base)" };
+
+const SCENARIOS = [
+  { id: "all", t: "All 12 leads", d: "normal recording" },
+  { id: "chest", t: "No chest leads", d: "V1–V6 unplugged" },
+  { id: "limb", t: "No limb leads", d: "I–aVF unplugged" },
+  { id: "random6", t: "6 random off", d: "new draw each click" },
+  { id: "emg", t: "Muscle noise", d: "3 leads, 10 dB EMG" },
+];
+
+let META = null, LAST = null, seq = 0;
+const S = { sample: 0, on: Array(12).fill(true), noisy: [], quality: "switches", baseline: "resnet_c1", scenario: "all", seed: 1 };
+
+// ------------------------------------------------------------ state
+function shuffled(n) {
+  const a = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function applyScenario(id) {
+  S.scenario = id;
+  S.on = Array(12).fill(true);
+  S.noisy = [];
+  if (id === "chest") CHEST.forEach((j) => (S.on[j] = false));
+  if (id === "limb") LIMB.forEach((j) => (S.on[j] = false));
+  if (id === "random6") shuffled(12).slice(0, 6).forEach((j) => (S.on[j] = false));
+  if (id === "emg") { S.noisy = shuffled(12).slice(0, 3).sort((a, b) => a - b); S.seed++; S.quality = "sqa"; }
+  update();
+}
+function toggleLead(j) { S.on[j] = !S.on[j]; S.scenario = "custom"; update(); }
+function setSample(i) { S.sample = (i + META.samples.length) % META.samples.length; update(); }
+function patientName(i) {
+  const s = META.samples[i];
+  return `${s.target} ${META.samples.filter((x) => x.target === s.target).findIndex((x) => x.index === i) + 1}`;
+}
+
+// ------------------------------------------------------------ server
+async function update() {
+  renderControls();
+  const my = ++seq;
+  const busy = setTimeout(() => $("#busy").classList.add("on"), 150);
+  try {
+    const res = await fetch("/api/predict", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sample: S.sample, on: S.on, noisy: S.noisy, quality: S.quality, baseline: S.baseline, seed: S.seed }) });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error || res.statusText);
+    if (my === seq) { LAST = r; render(r); $("#error").style.display = "none"; }
+  } catch (e) {
+    showError("Lost contact with the demo server (" + e.message + "). Is `python app.py` still running?");
+  } finally {
+    clearTimeout(busy);
+    if (my === seq) $("#busy").classList.remove("on");
+  }
+}
+function showError(msg) { const el = $("#error"); el.textContent = msg; el.style.display = "block"; }
+
+// ------------------------------------------------------------ controls
+function renderControls() {
+  $("#patients").innerHTML = META.classes.map((c) => {
+    const chips = META.samples.filter((s) => s.target === c).map((s, k) =>
+      `<button class="chip${s.index === S.sample ? " active" : ""}" data-sample="${s.index}" title="${esc(c)} ${k + 1}: true labels ${esc(s.labels.join(" + "))}">${k + 1}</button>`).join("");
+    return `<div class="group"><div class="group-name"><b>${esc(META.class_names[c])}</b><span>${esc(c)}</span></div><div class="chips">${chips}</div></div>`;
+  }).join("");
+  const s = META.samples[S.sample];
+  $("#picked").innerHTML = `Showing <b>${esc(patientName(S.sample))}</b> · true labels ${esc(s.labels.join(" + "))}`;
+
+  $("#scenarios").innerHTML = SCENARIOS.map((sc, i) =>
+    `<button class="${S.scenario === sc.id ? "active" : ""}" data-scen="${sc.id}" title="${esc(sc.t)}: ${esc(sc.d)} (key ${i + 1})"><span class="t">${esc(sc.t)}</span><span class="d">${esc(sc.d)}</span></button>`).join("");
+  const nOff = S.on.filter((v) => !v).length;
+  $("#scenNote").innerHTML = S.scenario === "custom"
+    ? `<b>Custom</b>: ${nOff} unplugged${S.noisy.length ? ` · ${S.noisy.length} noisy` : ""}`
+    : "or click a lead name on the ECG";
+
+  document.querySelectorAll("#qualitySeg button").forEach((b) => b.classList.toggle("active", b.dataset.v === S.quality));
+  document.querySelectorAll("#baseSeg button").forEach((b) => b.classList.toggle("active", b.dataset.v === S.baseline));
+  $("#qualityWhy").textContent = S.quality === "sqa"
+    ? "The quality checker (SQA) reads each signal and scores it from 0 to 1, so it also catches noisy leads."
+    : "q = 1 if the lead is plugged in, 0 if not. Noise is invisible to this; use the quality checker for that.";
+  $("#baseWhy").textContent = S.baseline === "resnet_c1"
+    ? "Standard ResNet that saw broken leads in training: the fair comparison."
+    : "Standard ResNet that only ever saw complete ECGs.";
+}
+
+// ------------------------------------------------------------ rendering
+const leadState = (r, j) => (!r.on[j] ? "off" : r.noisy.includes(j) ? "noisy" : "ok");
+
+function renderECG(r) {
+  let svg = "";
+  for (let j = 0; j < 12; j++) {
+    const y0 = (j + 0.5) * OFFSET, sig = r.raw[j];
+    let pts = "";
+    for (let i = 0; i < sig.length; i++) pts += i + "," + (y0 - sig[i]).toFixed(3) + " ";
+    svg += `<polyline class="trace ${leadState(r, j)}" points="${pts}"/>`;
+  }
+  $("#ecgSvg").innerHTML = svg;
+  $("#leadBtns").innerHTML = META.leads.map((name, j) => {
+    const st = leadState(r, j);
+    return `<button class="lead-btn ${st}" data-lead="${j}" title="${esc(name)}: ${st === "off" ? "click to plug back in" : "click to unplug"}"><span>${esc(name)}</span><span class="dot"></span></button>`;
+  }).join("");
+  $("#qCol").innerHTML = r.q.map((q) => {
+    const cls = q < 0.02 ? "masked" : q < 0.5 ? "low" : "";
+    return `<div class="q-cell" title="q = ${q.toFixed(3)}"><div class="q-track"><div class="q-fill ${cls}" style="width:${(q * 100).toFixed(1)}%"></div></div><span class="q-val">${q.toFixed(2)}</span></div>`;
+  }).join("");
+  $("#qHead").textContent = S.quality === "sqa" ? "q · quality checker" : "q · lead switches";
+  $("#ecgSub").textContent = `${patientName(S.sample)} · raw signal in mV · 10 s at ${META.fs} Hz`;
+}
+
+function renderHeat(r) {
+  const a = r.attn, max = Math.max(0.25, ...a.flat());
+  const css = getComputedStyle(document.documentElement), rgbVar = (n) => css.getPropertyValue(n).split(",").map(Number);
+  const c0 = rgbVar("--heat-0"), c1 = rgbVar("--heat-1");
+  const col = (w) => { const t = Math.min(1, w / max);
+    return `rgb(${c0.map((v, i) => Math.round(v + (c1[i] - v) * t)).join(",")})`; };
+  const dead = r.q.map((q) => q < 0.02);
+  const anyAlive = dead.some((d) => !d);
+  let html = `<div></div>` + META.leads.map((n, j) => `<div class="lab colhead${dead[j] ? " dead" : ""}">${esc(n)}</div>`).join("");
+  for (let i = 0; i < 12; i++) {
+    html += `<div class="lab${dead[i] ? " dead" : ""}">${esc(META.leads[i])}</div>`;
+    for (let j = 0; j < 12; j++)
+      html += `<div class="cell${dead[i] && anyAlive ? " deadrow" : ""}" style="background:${col(a[i][j])}" title="${META.leads[i]} reads ${META.leads[j]}: ${a[i][j].toFixed(3)}"></div>`;
+  }
+  $("#heat").innerHTML = html;
+}
+
+function renderChart(r) {
+  const T = META.testset;
+  if (!T) { $("#testsetPanel").style.display = "none"; return; }
+  const W = 360, H = 210, L = 36, R = 12, Tp = 8, B = 36;
+  const keys = ["resnet_c0", "resnet_c1", "lg_edl"].filter((k) => T.curves[k]);
+  const all = keys.flatMap((k) => T.curves[k].mean);
+  const lo = Math.floor((Math.min(...all) - 0.01) * 20) / 20, hi = Math.ceil((Math.max(...all) + 0.005) * 20) / 20;
+  const kmax = Math.max(...T.k);
+  const x = (k) => L + (k / kmax) * (W - L - R), y = (v) => Tp + (1 - (v - lo) / (hi - lo)) * (H - Tp - B);
+  let s = "";
+  for (let v = lo; v <= hi + 1e-9; v += 0.05) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" style="stroke:var(--line-2)"/><text x="${L - 6}" y="${y(v) + 3}" text-anchor="end">${v.toFixed(2)}</text>`;
+  T.k.forEach((k) => (s += `<text x="${x(k)}" y="${H - B + 14}" text-anchor="middle">${k}</text>`));
+  const nOff = r.on.filter((v) => !v).length;
+  if (nOff <= kmax) s += `<line x1="${x(nOff)}" x2="${x(nOff)}" y1="${Tp}" y2="${H - B}" style="stroke:var(--ink)" stroke-dasharray="3 3"/>` +
+    `<text x="${x(nOff) > W - 110 ? x(nOff) - 5 : x(nOff) + 5}" y="${H - B - 7}" text-anchor="${x(nOff) > W - 110 ? "end" : "start"}" style="fill:var(--ink)">this ECG: ${nOff} unplugged</text>`;
+  for (const k of keys) {
+    const c = T.curves[k], dim = k.startsWith("resnet") && k !== S.baseline;
+    const pts = T.k.map((kk, i) => `${x(kk).toFixed(1)},${y(c.mean[i]).toFixed(1)}`).join(" ");
+    s += `<polyline points="${pts}" fill="none" style="stroke:${COLORS[k]}" stroke-width="2" ${k === "resnet_c0" ? 'stroke-dasharray="5 4"' : ""} opacity="${dim ? 0.3 : 1}"/>`;
+    s += T.k.map((kk, i) => `<circle cx="${x(kk)}" cy="${y(c.mean[i])}" r="2.6" style="fill:${COLORS[k]}" opacity="${dim ? 0.3 : 1}"><title>${k}, k = ${kk}: ${c.mean[i].toFixed(3)}</title></circle>`).join("");
+  }
+  s += `<text x="${(L + W - R) / 2}" y="${H - 3}" text-anchor="middle">leads unplugged (k)</text>`;
+  $("#chart").innerHTML = s;
+  const name = { lg_edl: "LeadGuard", resnet_c1: "ResNet, broken leads", resnet_c0: "ResNet, clean" };
+  $("#chartLegend").innerHTML = keys.slice().reverse().map((k) =>
+    `<span><i style="border-color:${COLORS[k]};${k === "resnet_c0" ? "border-top-style:dashed;" : ""}"></i>${name[k]}${T.curves[k].n_seeds > 1 ? ` (${T.curves[k].n_seeds} seeds)` : ""}</span>`).join("");
+}
+
+const predList = (pred) => META.classes.filter((c, k) => pred[k]);
+const sameSet = (a, b) => a.length === b.length && a.every((c) => b.includes(c));
+
+function modelCard(el, kind, who, name, m, truth, abstained) {
+  const pred = predList(m.pred), full = predList(m.pred_full);
+  const wrong = pred.filter((c) => !truth.includes(c)), missed = truth.filter((c) => !pred.includes(c));
+  const chips = pred.length ? pred.map((c) => `<span class="pred${truth.includes(c) ? "" : " wrong"}" title="${esc(META.class_names[c])}">${esc(c)}</span>`).join("")
+                            : `<span class="pred none">no class</span>`;
+  let verdict, bad = false;
+  if (abstained) verdict = "Declined to answer. Faded: what it would have said.";
+  else if (!wrong.length && !missed.length) verdict = "Matches the true diagnosis.";
+  else { bad = true; verdict = [wrong.length ? `Extra: ${wrong.join(", ")}` : "", missed.length ? `Missed: ${missed.join(", ")}` : ""].filter(Boolean).join(" · "); }
+  const changed = !sameSet(pred, full);
+  const ref = changed ? `With all 12 leads it said <b>${esc(full.join(" + ") || "no class")}</b>` : "Same as with all 12 leads";
+  el.className = `model ${kind}${abstained ? " abstained" : ""}`;
+  el.innerHTML = `<div class="who">${esc(who)}</div><div class="name">${esc(name)}</div><div class="preds">${chips}</div>` +
+    `<div class="verdict${bad ? " bad" : ""}">${esc(verdict)}</div><div class="ref${changed ? " changed" : ""}">${ref}</div>`;
+}
+
+function renderResults(r) {
+  $("#truth").innerHTML = r.truth.map((c) => `<span class="tl">${esc(c)} <small>${esc(META.class_names[c])}</small></span>`).join("");
+  $("#banner").innerHTML = r.abstain
+    ? `<div class="banner"><b>ABSTAIN</b>LeadGuard declines to classify this record: ${esc(r.reasons.map((x) => x.kind === "signal"
+        ? `only ${x.value.toFixed(2)} leads' worth of usable signal is left (needs ${x.limit.toFixed(0)})`
+        : `its uncertainty ${x.value.toFixed(3)} is above the limit ${x.limit.toFixed(3)}`).join("; and "))}.</div>`
+    : "";
+  modelCard($("#mBase"), "base", S.baseline === "resnet_c1" ? "Baseline · broken-lead training" : "Baseline · clean training", "ResNet", r.base, r.truth, false);
+  modelCard($("#mLg"), "lg", "Proposed · broken-lead training", "LeadGuard", r.lg, r.truth, r.abstain);
+  $("#legBase").textContent = "ResNet";
+
+  $("#probs").innerHTML = META.classes.map((c, k) => {
+    const bar = (cls, m, faded, who) =>
+      `<div class="bar-row"><div class="bar ${cls}${faded ? " faded" : ""}" title="${esc(who)}: p = ${m.prob[k].toFixed(3)}, threshold ${m.thr[k].toFixed(2)}">` +
+      `<div class="f" style="width:${(m.prob[k] * 100).toFixed(1)}%"></div><div class="thr" style="left:calc(${(m.thr[k] * 100).toFixed(1)}% - 1px)"></div></div>` +
+      `<span class="v">${m.prob[k].toFixed(2)}</span></div>`;
+    return `<div class="cls">${esc(c)}${r.truth.includes(c) ? '<span class="true-mark">true</span>' : ""}<small>${esc(META.class_names[c])}</small></div>` +
+      `<div class="bars">${bar("b", r.base, false, r.base.label)}${bar("l", r.lg, r.abstain, "LeadGuard")}</div>`;
+  }).join("");
+
+  const qBad = r.q_sum < r.q_min, uBad = r.U > r.u_threshold;
+  $("#qsumV").textContent = r.q_sum.toFixed(2);
+  $("#qsumV").classList.toggle("bad", qBad);
+  $("#qsumF").style.width = `${(r.q_sum / 12 * 100).toFixed(1)}%`;
+  $("#qsumF").classList.toggle("bad", qBad);
+  $("#qsumLim").style.left = `calc(${(r.q_min / 12 * 100).toFixed(1)}% - 1px)`;
+  $("#qsumN").innerHTML = (qBad ? "<b style='color:var(--crit)'>Too little signal.</b> " : "") + `Sum of the 12 q values, out of 12. Abstains below ${r.q_min.toFixed(0)}.`;
+  $("#uV").textContent = r.U.toFixed(3);
+  $("#uV").classList.toggle("bad", uBad);
+  $("#uF").style.width = `${(Math.min(r.U, 1) * 100).toFixed(1)}%`;
+  $("#uF").classList.toggle("bad", uBad);
+  $("#uLim").style.left = `calc(${(r.u_threshold * 100).toFixed(1)}% - 1px)`;
+  $("#uN").innerHTML = (uBad ? "<b style='color:var(--crit)'>Too uncertain.</b> " : "") + `From the evidential head, 0 to 1. Abstains above ${r.u_threshold.toFixed(3)}.`;
+}
+
+function render(r) { renderECG(r); renderHeat(r); renderChart(r); renderResults(r); }
+
+// ------------------------------------------------------------ theme
+function setTheme(t, save) {
+  document.documentElement.dataset.theme = t;
+  $("#themeBtn").textContent = t === "dark" ? "Light" : "Dark";
+  if (save) { try { localStorage.setItem("leadguard-theme", t); } catch (e) { /* storage blocked: keep for this visit */ } }
+  if (LAST) render(LAST);  // heatmap colours are computed from the theme
+}
+function toggleTheme() { setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true); }
+(function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem("leadguard-theme"); } catch (e) { /* ignore */ }
+  setTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"), false);
+})();
+
+// ------------------------------------------------------------ events
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.();
+}
+document.addEventListener("fullscreenchange", () => ($("#fsBtn").textContent = document.fullscreenElement ? "Exit full screen" : "Full screen"));
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b || !META) return;
+  if (b.id === "fsBtn") toggleFullscreen();
+  else if (b.id === "themeBtn") toggleTheme();
+  else if (b.dataset.sample !== undefined) setSample(+b.dataset.sample);
+  else if (b.dataset.scen) applyScenario(b.dataset.scen);
+  else if (b.dataset.lead !== undefined) toggleLead(+b.dataset.lead);
+  else if (b.parentElement.id === "qualitySeg") { S.quality = b.dataset.v; update(); }
+  else if (b.parentElement.id === "baseSeg") { S.baseline = b.dataset.v; update(); }
+});
+document.addEventListener("keydown", (e) => {
+  if (!META || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "arrowright") setSample(S.sample + 1);
+  else if (k === "arrowleft") setSample(S.sample - 1);
+  else if (/^[1-5]$/.test(k)) applyScenario(SCENARIOS[+k - 1].id);
+  else if (k === "q") { S.quality = S.quality === "sqa" ? "switches" : "sqa"; update(); }
+  else if (k === "b") { S.baseline = S.baseline === "resnet_c1" ? "resnet_c0" : "resnet_c1"; update(); }
+  else if (k === "f") toggleFullscreen();
+  else if (k === "d") toggleTheme();
+  else return;
+  e.preventDefault();
+});
+
+(async function init() {
+  try { META = await (await fetch("/api/meta")).json(); }
+  catch (e) { showError("Could not reach the demo server. Start it with: python app.py"); return; }
+  $("#dataTag").textContent = (META.data === "ptbxl" ? "PTB-XL test set" : `${META.data} data`) + (META.debug ? " · debug models" : "");
+  $("#ticks").innerHTML = Array.from({ length: 11 }, (_, i) => `<span style="left:${i * 10}%">${i}</span>`).join("");
+  update();
+})();
+</script>
+</body>
+</html>

@@ -29,7 +29,7 @@ python run_all.py --data synthetic --debug
 python evaluate.py --data synthetic --debug --strict
 python figures.py
 python make_demo_samples.py --data synthetic --debug
-streamlit run app.py
+python app.py
 ```
 Synthetic numbers only check that the code runs; they never go into the paper. Real-data commands are in `GUIDE.md` section 9.
 
@@ -50,7 +50,8 @@ evaluate.py           all test conditions and metrics -> results/*.csv
 figures.py            Figures 1-4, Tables 1-2
 tests.py              SPEC section 5 tests
 make_demo_samples.py  demo samples and demo_config.json
-app.py                Streamlit demo (theme in .streamlit/config.toml)
+app.py                demo server (standard library HTTP + JSON API), opens the page in a browser
+demo/index.html       demo page (plain HTML/CSS/JS, no internet needed)
 cache/  checkpoints/  results/  figures/  demo_samples/
 ```
 
