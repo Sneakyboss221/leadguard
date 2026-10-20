@@ -14,7 +14,7 @@ An ECG classifier that stays usable when leads fail:
 
 We compare it against baselines and ablations under simulated lead failure, then ship a Streamlit demo and a conference-style paper.
 
-Rules for the coding tool: follow file names, signatures, shapes and tests exactly; write clean PyTorch; never invent results; ask when something is ambiguous. Develop and test on CPU with the synthetic dataset and `--debug`; train on a Colab T4 GPU.
+Development rules: follow file names, signatures, shapes and tests exactly; write clean PyTorch; never invent results; ask when something is ambiguous. Develop and test on CPU with the synthetic dataset and `--debug`; train on a Colab T4 GPU.
 
 Claims rule: masking attention and evidential learning are both known techniques. The contribution is the combination plus the evaluation protocol. Do not write "first". Every number in the paper must come from `results/*.csv`.
 

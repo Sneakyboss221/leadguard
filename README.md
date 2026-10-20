@@ -35,10 +35,32 @@ PTB-XL v1.0.3 (Wagner et al., Scientific Data 2020, doi:10.1038/s41597-020-0495-
 doi:10.13026/kfzx-aw45). The raw data are not included; download them from PhysioNet under its terms.
 `demo_samples/` contains 20 test-fold records derived from PTB-XL.
 
-## Development notes
+## Design documents
 
-Architecture and rules: `SPEC.md`. Coding-agent rules: `AGENTS.md`. Build order: `PROMPTS.md`. Walkthrough,
-including the Colab run: `GUIDE.md`. Every interpretation of or deviation from the spec: `DECISIONS.md`.
+`SPEC.md` is the specification (data contract, corruption model, architectures, tests, evaluation protocol).
+`DECISIONS.md` records every interpretation of, and deviation from, the specification.
+
+## Reproduce on PTB-XL (GPU)
+
+The paper's runs used one GPU; the full run list took about 25 minutes. Download PTB-XL v1.0.3 from PhysioNet
+(about 2 GB), then:
+```
+python data.py --name ptbxl --root PATH/TO/ptb-xl-1.0.3      # builds cache/ptbxl.npz once (about 1 GB)
+python -m pytest -q tests.py                                 # must pass before training
+python pretrain_sqa.py --data ptbxl --ckpt-dir OUT/checkpoints --out-dir OUT/results
+python run_all.py --data ptbxl --ckpt-dir OUT/checkpoints --out-dir OUT/results
+python evaluate.py --data ptbxl --strict --ckpt-dir OUT/checkpoints --out-dir OUT/results
+python figures.py --results-dir OUT/results --fig-dir OUT/figures
+python make_demo_samples.py --data ptbxl --ckpt-dir OUT/checkpoints --results-dir OUT/results --out-dir OUT/demo_samples
+```
+`pretrain_sqa.py` must end with `PASS` (lead-level agreement above 0.95 outside the ambiguous severity band).
+`run_all.py` skips finished runs and resumes interrupted ones, so after a disconnect the same command continues;
+`--only RUN ...` runs a subset (e.g. `--only resnet_s0_c1 lg_edl_s0_c1`). `evaluate.py --strict` refuses to run
+unless all 13 runs are finished. Add `--cache-dir DIR` to every command if the cache lives elsewhere.
+
+## License
+
+Code: MIT (see `LICENSE`). PTB-XL is not redistributed here; it is subject to its own PhysioNet terms.
 
 ## Quick start (local, CPU, synthetic data)
 
@@ -69,7 +91,8 @@ python figures.py
 python make_demo_samples.py --data synthetic --debug
 python app.py
 ```
-Synthetic numbers only check that the code runs; they never go into the paper. Real-data commands are in `GUIDE.md` section 9.
+Synthetic numbers only check that the code runs; they never go into the paper. For the real data, see
+"Reproduce on PTB-XL" above.
 
 ## Layout
 
