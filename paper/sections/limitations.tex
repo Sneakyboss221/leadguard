@@ -1,3 +1,36 @@
 \section{Limitations}
 \label{sec:limitations}
-\todo{To be drafted.}
+
+\emph{One dataset.} All results come from PTB-XL, a single retrospective collection, used here in its 100\,Hz
+version. Whether the conclusions transfer to other populations, devices, sampling rates and label sets is untested.
+
+\emph{Simulated failures only.} Every lead failure in this study is simulated. Removed and flatlined leads are
+idealised: they are exactly zero or exactly constant, and therefore trivially detectable. Real recordings fail
+in subtler ways that we did not model, including intermittent electrode contact, motion artifacts with
+non-stationary spectra, mains interference and swapped electrode cables \cite{batchvarov2007incorrect}, which
+yields a plausible-looking but wrong signal rather than a missing one.
+
+\emph{The quality assessor was judged against our own simulation.} Its targets are the severities of
+Section~\ref{sec:data-failure}, which encode our design choices, for example that wander with an amplitude ratio
+above one makes a lead unreliable. Its high agreement shows that it learned these rules, not that it would judge
+real artifacts the way a clinician would. EMG at the test SNR lies exactly on the reliability boundary, where its
+agreement drops to \sqaEmgTestCorrupted{} of the corrupted leads. Real, subtle artifacts may behave differently,
+and soft gating, which our near-binary simulation barely exercised, might matter more there.
+
+\emph{Limited seeds and budget.} Only the two models of the main comparison were trained with three seeds; the
+ablation variants are single runs, so differences between them of the order of 0.01 macro-AUROC cannot be
+ranked. No hyperparameters were tuned and training was capped at 15 epochs, which keeps the comparison fair but
+leaves absolute performance below the published benchmark; stronger models might change the size, though we see
+no reason for the direction, of the effects.
+
+\emph{Statistical scope.} The paired bootstrap intervals are reported per condition, without correction for
+multiple comparisons, and the conditions share test records.
+
+\emph{One evidential variant.} We evaluated a single evidential formulation (the per-class cross-entropy variant),
+trained only with corruption and without temperature scaling. Other evidential objectives, ensembles or
+Monte-Carlo dropout were not compared, so the illusion of certainty is demonstrated for this model, not for
+uncertainty estimation in general.
+
+\emph{No clinical validation.} The system is a research prototype. The illustrative case and the demonstration use
+hand-picked records on which both models are correct with all leads, and nothing here has been validated in a
+clinical setting.

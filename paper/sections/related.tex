@@ -1,3 +1,59 @@
 \section{Related Work}
 \label{sec:related}
-\todo{To be drafted.}
+
+\subsection{Classification from reduced and missing leads}
+The question of how much of the twelve-lead ECG a classifier really needs was put to the community by the
+PhysioNet/Computing in Cardiology Challenge 2021, \emph{Will Two Do?}, which asked whether reduced-lead
+recordings retain the diagnostic information of the full twelve leads \cite{reyna2021willtwodo}. The winning
+entry, an ensemble of residual convolutional networks with a multi-head attention mechanism, ranked first in every
+lead configuration, with nearly unchanged scores from twelve down to two leads on the hidden validation set
+\cite{nejedly2021cinc,nejedly2022ensemble}. In representation learning, Oh \emph{et al.}\ pre-train ECG encoders with random lead
+masking so that the learned features do not depend on a fixed set of leads \cite{oh2022leadagnostic}.
+
+These works share a premise: the model is told, or trained to expect, that some leads are absent. Our setting
+differs in two ways. First, failure is unannounced: the input is always a twelve-lead array, and a failed lead
+arrives as zeros, a flat line or noise. Second, our aim is not a better reduced-lead classifier but a controlled
+attribution: given that training already includes lead failure, as in lead masking, does an explicit per-lead
+quality estimate that gates the attention add anything? Our answer, that the augmentation carries almost all of
+the benefit, is consistent with the success of masking-based training in this prior work.
+
+\subsection{Benchmarks on PTB-XL}
+Strodthoff \emph{et al.}\ established the reference benchmark for PTB-XL with its recommended patient-level folds;
+convolutional networks, in particular ResNet- and Inception-based architectures, performed best across tasks
+\cite{strodthoff2021benchmark}. We adopt the same folds, label definition and 100\,Hz signal. Our models are
+trained under a deliberately small, shared budget and do not reach the benchmark's absolute scores
+(Section~\ref{sec:res-clean}); every comparison in this paper is therefore relative, between models trained
+identically.
+
+\subsection{Evidential deep learning and its critics}
+Evidential deep learning places a Dirichlet distribution over class probabilities, interprets the network
+outputs as evidence in the sense of subjective logic, and reads uncertainty from the total amount of evidence,
+all from a single deterministic network \cite{sensoy2018edl}. Its original evaluation reported strong
+out-of-distribution detection and robustness to adversarial perturbation. Its theoretical footing has since been
+questioned. Bengs \emph{et al.}\ showed that the loss functions used to train such second-order predictors do not
+incentivise them to represent their epistemic uncertainty faithfully \cite{bengs2022pitfalls}. Shen
+\emph{et al.}\ sharpened this analysis across many evidential objectives, found that the learned epistemic
+uncertainty does not vanish even with infinite data, and argued that evidential models behave more like
+energy-based out-of-distribution detectors, which can still perform well on downstream tasks despite poor
+uncertainty quantification \cite{shen2024mirage}.
+
+Our results add a concrete, applied data point to this debate. Lead failure is a structured loss of information
+whose severity we control exactly, and the evidential uncertainty of our model does not track it
+(Section~\ref{sec:res-edl}). Unlike in an out-of-distribution benchmark, a recording with failed leads
+contains strictly less information than the same recording intact, so an uncertainty measure that stays flat
+as leads disappear is hard to defend.
+
+\subsection{Calibration and selective prediction}
+Modern networks are often poorly calibrated, and a single temperature fitted on held-out data is a simple and
+effective remedy \cite{guo2017calibration}; we apply it to every sigmoid model so that calibration comparisons
+with the evidential head are fair. Selective classification lets a classifier abstain to reach a target risk;
+thresholding the network's own maximum class probability is already a strong rejection rule
+\cite{geifman2017selective}. Our confidence score is the multi-label analogue of that rule, and our
+risk--coverage results show that it matches the evidential uncertainty (Section~\ref{sec:res-edl}).
+
+\subsection{What this study adds}
+We do not propose a new architecture. We contribute a controlled ablation that separates three ingredients that
+are usually introduced together (training with lead failure, quality-gated lead attention and evidential
+abstention), evaluates them on identical, deterministically corrupted test data, controls for the accuracy of
+the quality estimate with an oracle, and reports paired confidence intervals. The value of the study lies in
+which of these ingredients survive that separation.

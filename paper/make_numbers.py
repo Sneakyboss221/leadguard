@@ -152,6 +152,11 @@ def main() -> None:
     m("sqaEmgTestBand", f3(sqa.loc[sqa.corruption == "emg_10db_test", "frac_in_band"].iloc[0]), "sqa_agreement.csv")
     timing = pd.read_csv(R / "timing.csv")
     m("gpuMinutes", f"{timing.seconds.sum() / 60:.0f}", "timing.csv: sum of seconds / 60")
+    first = timing[~timing.resumed.astype(bool)]  # first invocation of each run (a resumed run adds a second row)
+    sec = lambda model, c: first[(first.model == model) & (first.corrupt_train == c)].seconds.mean()
+    m("secLgEdlRun", f"{sec('lg_edl', 1):.0f}", "timing.csv: mean seconds per lg_edl run (first invocation)")
+    m("secResDropRun", f"{sec('resnet', 1):.0f}", "timing.csv: mean seconds per resnet c1 run")
+    m("timeRatioLgRes", f"{sec('lg_edl', 1) / sec('resnet', 1):.1f}", "timing.csv: lg_edl / resnet c1 seconds per run")
 
     # ---------------------------------------------------------------- clean (Table I)
     t1 = pd.read_csv(R / "table1.csv").set_index("variant")

@@ -3,15 +3,14 @@
 
 \subsection{PTB-XL}
 \label{sec:data-ptbxl}
-We use PTB-XL version~1.0.3 \citeneeded{PTB-XL dataset paper (Wagner et al.) and PhysioNet v1.0.3 record, DOI
-10.13026/kfzx-aw45}, a public collection of clinical 12-lead ECGs of 10\,s each, annotated with SCP-ECG
+We use PTB-XL version~1.0.3 \cite{wagner2020ptbxl,ptbxl103}, a public collection of clinical 12-lead ECGs of 10\,s each, annotated with SCP-ECG
 statements. We use the 100\,Hz release, so every record is a $12\times1000$ array in the fixed lead order I, II,
 III, aVR, aVL, aVF, V1--V6. Labels are the five diagnostic superclasses: normal ECG (NORM), myocardial infarction
 (MI), ST/T change (STTC), conduction disturbance (CD) and hypertrophy (HYP). Every statement marked as diagnostic
 is mapped to its superclass irrespective of its likelihood value, records may carry several superclasses
-(multi-label), and records without any diagnostic superclass are excluded, leaving \nRecordsKept{} records. We follow the dataset's recommended stratified folds \citeneeded{PTB-XL paper
-on \texttt{strat\_fold}}: folds 1--8 for training, fold~9 for validation and fold~10 (\nTestRecords{} records) for
-testing. Each lead of each record is standardised to zero mean and unit variance; a lead whose standard deviation
+(multi-label), and records without any diagnostic superclass are excluded, leaving \nRecordsKept{} records. We use the dataset's recommended stratified folds, which keep all
+records of a patient in the same fold \cite{wagner2020ptbxl,strodthoff2021benchmark}: folds 1--8 for training,
+fold~9 for validation and fold~10 (\nTestRecords{} records) for testing. Each lead of each record is standardised to zero mean and unit variance; a lead whose standard deviation
 is below $10^{-6}$ (a dead lead) is set to zero instead of being divided by a near-zero number. The raw
 millivolt signal is kept only for display.
 

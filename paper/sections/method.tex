@@ -108,7 +108,7 @@ removes misleading evidence,
 where $\psi$ is the digamma function, $(\tilde\alpha_k,\tilde\beta_k)=(1,\beta_k)$ if $y_k=1$ and
 $(\alpha_k,1)$ if $y_k=0$, and $\lambda_t=\min(1,t/10)$ for epoch $t=0,1,\dots$ The loss is summed over classes
 and averaged over the batch. This is the cross-entropy variant (Eq.~4) of evidential deep learning
-\citeneeded{Sensoy et al.\ 2018}, applied per class with a two-outcome Dirichlet, i.e.\ a Beta distribution, so
+\cite{sensoy2018edl}, applied per class with a two-outcome Dirichlet, i.e.\ a Beta distribution, so
 that it suits multi-label diagnosis; the original work used a squared-error variant in its own experiments. We
 verified the closed-form terms of Eq.~\eqref{eq:edlloss} against numerical integration (agreement to
 $2\times10^{-11}$).

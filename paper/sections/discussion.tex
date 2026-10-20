@@ -1,3 +1,68 @@
 \section{Discussion}
 \label{sec:discussion}
-\todo{To be drafted.}
+
+\subsection{Why the simpler models held their ground}
+The un-gated lead-attention model and the corruption-trained ResNet matched the full system under every form of
+lead loss, and the un-gated model was slightly better on clean data. Three observations explain why quality gating
+had so little to add.
+
+\emph{The quality score carries no new information.} The assessor computes $q_j$ from the same corrupted signal
+the classifier receives, so $\mathbf{q}$ is a deterministic function of $\mathbf{x}$. Gating can therefore only
+change the inductive bias, not the evidence available. A network trained on corrupted records learns its own
+implicit quality detector, and for the failures simulated here that task is easy: a removed lead is exactly zero
+after standardisation, a flat line in every sense of the word.
+
+\emph{Gating can discard usable signal.} The assessor was trained to call a lead with strong baseline wander
+unreliable, yet wander is a slow drift on which the QRS complexes remain readable. Under wander on six leads all
+three gated variants fall below the un-gated model and the ResNet (Section~\ref{sec:res-gating}), the pattern one
+would expect if gating throws away information that an un-gated network still uses. This explanation is
+consistent with our results but was not tested directly.
+
+\emph{The soft gate is barely exercised.} Because the simulated failures are either clearly present or clearly
+absent, the assessor's scores are nearly binary, and soft gating behaves like hard masking. Whether a graded
+quality score helps with graded, subtle artifacts is a question our data cannot answer.
+
+What gating does provide is a guarantee rather than accuracy: a lead below the floor provably cannot influence the
+output (Section~\ref{sec:method-mala}). That property may matter for auditing and for explaining a decision to a
+clinician, but it did not translate into better discrimination.
+
+\subsection{Architectural complexity versus data augmentation}
+The robustness on offer came almost entirely from one data-augmentation function. Training with simulated lead
+failure improved the same ResNet by \gainDropKTen{} macro-AUROC at $k=10$; across the four lead-attention variants,
+the whole quality-gating and evidential machinery spans \ablRangeKTen{}. The machinery is not free: it needs a
+separately pre-trained assessor, a quality floor, an uncertainty threshold and a lead-count limit, and a training
+run of LG-EDL took on average \secLgEdlRun{}\,s against \secResDropRun{}\,s for the corruption-trained ResNet,
+about \timeRatioLgRes{} times longer, partly because the ResNets stopped early. The parameter counts are similar
+(\paramsLgEdl{} against \paramsRes). For lead failure of the kind studied here, the cheaper intervention is also
+the effective one, and any proposed architecture for missing leads should be compared against a baseline that was
+trained with the same failures.
+
+\subsection{The illusion of certainty: a cautionary tale}
+The most consequential result concerns the uncertainty. As leads were removed, the macro-AUROC of LG-EDL fell from
+\aucLgEdlKZero{} to \aucLgEdlKTen{}, while its mean uncertainty $U$ moved from \meanUKZero{} to \meanUKTen. A
+clinician handed a two-lead strip would hedge; the network did not. The only safeguard that reacted was the
+explicit rule that counts usable leads, and it reacted only once fewer than three leads' worth of signal
+remained.
+
+We offer a hypothesis for the mechanism, which our experiments did not isolate. Corruption training shows the
+network the same diagnosis with and without its leads, and the evidential loss rewards confident, correct evidence
+on every training record. Nothing in the objective asks the evidence to shrink when information is missing; if
+anything, the model is taught to stay confident under lead loss, because that is what minimises the loss on the
+corrupted training records. This matches the theoretical concern that evidential objectives do not incentivise
+faithful epistemic uncertainty \cite{bengs2022pitfalls,shen2024mirage}. Testing it requires an evidential model
+trained without corruption, or an objective that explicitly ties the evidence to the remaining signal.
+
+The practical lesson is broader than this architecture. An uncertainty estimate that behaves sensibly on clean
+data, here rejecting the intended 5\% of validation records, can be blind to exactly the failure it is meant to
+catch. Uncertainty must be validated under the specific failures a deployed system will meet, and for
+signal-level failures an explicit check on the signal itself is, at present, the more reliable alarm.
+
+\begin{keybox}{Practical recommendations}
+\begin{itemize}\setlength{\itemsep}{2pt}\setlength{\leftmargin}{1em}
+  \item Train every ECG classifier with simulated lead failure; it is cheap and gives most of the robustness.
+  \item Compare any missing-lead architecture with a baseline trained on the same failures, never with a
+        clean-trained one alone.
+  \item Do not rely on a learned uncertainty score to detect lead failure without testing it under that failure;
+        check the signal explicitly and abstain on too little usable signal.
+\end{itemize}
+\end{keybox}

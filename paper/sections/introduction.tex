@@ -3,25 +3,26 @@
 \input{sections/fig_overview}
 
 \IEEEPARstart{T}{he} twelve-lead electrocardiogram (ECG) is the workhorse of cardiac diagnosis: ten electrodes,
-twelve views of the heart's electrical activity, ten seconds of signal \citeneeded{ECG textbook or guideline on
-the standard 12-lead ECG}. That picture assumes every electrode stays where it was placed. In emergency
-departments, ambulances and intensive-care units it often does not. Electrodes peel away from sweating skin,
-cables are tugged during transfers, muscle tremor buries the signal in noise, and leads end up swapped or
-disconnected altogether \citeneeded{clinical studies on lead misplacement, detachment and artifact in acute
-care}. The recording that reaches an automated classifier is frequently not the recording its training data
-promised.
+twelve views of the heart's electrical activity, ten seconds of signal, all of it standardised down to where
+each electrode belongs \cite{kligfield2007recommendations}. That picture assumes every electrode stays where it
+was placed. In emergency departments, ambulances and intensive-care units it often does not. Electrodes peel away
+from sweating skin, cables are tugged during transfers, muscle tremor buries the signal in noise, and cables end
+up connected to the wrong electrodes, an error that can mimic serious disease \cite{batchvarov2007incorrect}. The recording that reaches an automated classifier is frequently not the
+recording its training data promised.
 
-Deep networks trained on complete twelve-lead ECGs now rival cardiologists on curated benchmarks
-\citeneeded{PTB-XL benchmark (Strodthoff et al.) and large-scale ECG DL studies}. Their failure mode under
+Deep networks trained on large collections of twelve-lead ECGs now diagnose common abnormalities with high
+accuracy \cite{ribeiro2020automatic}; on PTB-XL, the best published models reach a macro-AUROC of about 0.93 for
+the five diagnostic superclasses \cite{strodthoff2021benchmark}. Their failure mode under
 missing or corrupted leads is less reassuring: a convolutional network has no built-in notion that a channel has
 gone flat, so it simply produces a diagnosis from whatever it receives, and nothing in its output tells the
-clinician that half of the recording was missing. Two families of remedies have been proposed. The first adds
-\emph{spatial structure}: treat the leads as tokens, estimate each lead's quality and let attention ignore the
-unreliable ones \citeneeded{lead-attention / missing-lead / masked-attention ECG works}. The second adds
-\emph{uncertainty}: replace the softmax or sigmoid output by an evidential head that reports how much evidence
-supports each prediction, so the system can abstain when it does not know \citeneeded{Sensoy et al.\ 2018 and
-evidential ECG works}. Both are appealing, and both are usually evaluated as part of a larger system, next to a
-change that may matter more: training on corrupted inputs.
+clinician that half of the recording was missing. Two families of remedies are natural. The first gives the model
+\emph{flexibility over the leads}: classifiers that accept reduced lead sets, as in the PhysioNet/Computing in
+Cardiology Challenge 2021 \cite{reyna2021willtwodo,nejedly2022ensemble}, models pre-trained with random lead
+masking \cite{oh2022leadagnostic}, and, one step further, attention that is told which leads to trust. The second
+adds \emph{uncertainty}: replace the sigmoid output by an evidential head that reports how much evidence supports
+each prediction, so the system can abstain when it does not know \cite{sensoy2018edl}. Both are appealing, and
+both are usually evaluated as part of a larger system, next to a change that may matter more: training on
+corrupted inputs.
 
 We set out to test these mechanisms one at a time. We built a carefully controlled pipeline that combines both
 (Fig.~\ref{fig:overview}): a frozen signal-quality assessor scores every lead, a mask-aware lead attention uses

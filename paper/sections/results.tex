@@ -53,8 +53,8 @@ clean-trained) to \aucResAttnClean{} (ResNet with un-gated lead attention, singl
 paired difference is \bootCleanDiff{} with 95\% CI \bootCleanCI{}. The patch Transformer (\aucTransClean{}),
 XGBoost on per-lead statistics (\aucXgbClean{}) and the MLP (\aucMlpClean{}) are clearly weaker.
 
-These clean scores are below published results for the PTB-XL superdiagnostic task
-\citeneeded{Strodthoff et al.\ 2021 PTB-XL benchmark; value to be verified before comparison}. We tuned no
+These clean scores are below the published PTB-XL benchmark for the same task at 100\,Hz, where the best single
+model reaches \litBestSingleAuc{} and an ensemble \litEnsembleAuc{} \cite{strodthoff2021benchmark}. We tuned no
 hyperparameters and trained for at most 15 epochs, so absolute performance is not the subject of this study; all
 comparisons below are between models trained under the same budget.
 
@@ -109,10 +109,9 @@ baseline wander, amplitude clipping).}
 
 Losing a whole lead group hurts most where anatomy says it should (Table~\ref{tab:group}, Fig.~\ref{fig:group}).
 The six precordial leads, V1--V6, wrap around the chest from the right sternal border to the left axillary line
-and view the heart in the horizontal plane. They are the primary diagnostic window on the anterior wall, where an
-anterior myocardial infarction is recognised, and they carry much of the ST-segment, T-wave and QRS-voltage
-evidence used for the other superclasses \citeneeded{standard electrocardiography reference on precordial lead
-placement and anterior MI}. A model that has only ever seen complete recordings has no reason to work without
+and view the heart in the horizontal plane \cite{kligfield2007recommendations}. They are the primary diagnostic
+window on the anterior wall, where an anterior myocardial infarction is recognised, and they carry much of the
+ST-segment, T-wave and QRS-voltage evidence used for the other superclasses. A model that has only ever seen complete recordings has no reason to work without
 them, and the clean-trained ResNet does not: its macro-AUROC collapses to \aucResCleanPrec, against
 \aucResDropPrec{} after corruption training. The per-class breakdown shows that the damage reaches beyond
 infarction. The clean-trained ResNet's AUROC for MI falls from \pcResCleanMi{} to \pcResCleanMiPrec, but its
