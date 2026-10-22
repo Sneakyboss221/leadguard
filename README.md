@@ -115,6 +115,9 @@ python app.py
 
 The page opens in the browser and works offline. Pick one of 20 test patients, unplug leads or add muscle noise,
 and compare LG-EDL with the ResNet baseline side by side, including whether LG-EDL would abstain and why.
+**Guided tour** (key T) walks through the main findings in 12 steps, every panel has a **?** explanation, and you
+can upload your own ECG as a CSV file or a WFDB record (`.hea` + `.dat`); example files from the PTB-XL test fold
+are in [`demo/examples/`](demo/examples/).
 
 ### Whole pipeline on synthetic data
 

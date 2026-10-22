@@ -104,7 +104,7 @@ aside.panel > section + section { border-top: 1px solid var(--line-2); }
 .picked { margin-top: 12px; font-size: 12.5px; color: var(--ink-2); }
 .field { margin-top: 12px; }
 .field:first-of-type { margin-top: 10px; }
-.field > label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+.field > .flabel { display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; padding: 2px; background: var(--bg); }
 .seg button { border: 0; background: transparent; border-radius: 4px; padding: 5px 4px; font-size: 12.5px; color: var(--ink-2); line-height: 1.25; }
 .seg button.active { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
@@ -226,6 +226,52 @@ kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); 
 footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
 .error { margin: 14px 22px 0; padding: 10px 14px; border-left: 4px solid var(--crit); background: var(--crit-soft); display: none; }
 
+/* ---------------- info buttons ---------------- */
+.info { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none; padding: 0;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); font-size: 11px; font-weight: 700;
+  line-height: 1; align-self: center; margin-left: 2px; }
+.info:hover { border-color: var(--lg); color: var(--lg); }
+.pop { position: fixed; z-index: 50; display: none; width: min(380px, calc(100vw - 24px)); padding: 12px 14px; font-size: 13px; color: var(--ink-2);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px rgba(0, 0, 0, .2); }
+.pop h4 { margin: 0 0 6px; font-size: 13.5px; color: var(--ink); }
+.pop p { margin: 0 0 7px; }
+.pop p:last-child { margin: 0; }
+.pop ul { margin: 0 0 7px; padding-left: 18px; }
+
+/* ---------------- upload ---------------- */
+.drop { display: block; margin-top: 10px; padding: 12px 10px; text-align: center; font-size: 12px; color: var(--muted); cursor: pointer;
+  border: 1.5px dashed var(--line); border-radius: 6px; background: var(--bg); }
+.drop:hover, .drop.over { border-color: var(--lg); color: var(--ink-2); }
+.drop b { display: block; margin-bottom: 2px; font-size: 13px; color: var(--ink); }
+.drop input { display: none; }
+.fs-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.fs-row input { width: 66px; padding: 2px 5px; font: 12px var(--mono); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+.up-status { margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+.up-status:empty { display: none; }
+.up-status.bad { color: var(--crit); }
+.examples { margin-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.65; }
+.examples a { color: var(--lg); }
+.chips.ups { grid-template-columns: 1fr 1fr; }
+.chip.up { padding: 4px 6px; font: 12px var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------------- guided tour ---------------- */
+.ghost.primary { background: var(--lg); border-color: var(--lg); color: #fff; font-weight: 600; }
+.ghost.primary:hover { color: #fff; filter: brightness(1.08); }
+.tour-ring { position: fixed; z-index: 40; display: none; pointer-events: none; border-radius: 8px;
+  box-shadow: 0 0 0 3px var(--lg), 0 0 0 100vmax rgba(10, 12, 16, .5); transition: left .25s, top .25s, width .25s, height .25s; }
+.tour-card { position: fixed; z-index: 41; display: none; width: min(430px, calc(100vw - 24px)); padding: 16px 18px 14px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 18px 44px rgba(0, 0, 0, .3); }
+.tour-step { font-size: 11.5px; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+.tour-card h4 { margin: 3px 0 8px; font-size: 16.5px; }
+.tour-card .body { font-size: 13.5px; color: var(--ink-2); }
+.tour-card .body p { margin: 0 0 8px; }
+.tour-card .body b { color: var(--ink); }
+.tour-nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; }
+.tour-nav .btns { display: flex; gap: 6px; }
+.tour-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+.tour-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.tour-dots i.on { background: var(--lg); }
+
 /* ---------------- responsive ---------------- */
 @media (min-width: 1600px) {
   .layout { grid-template-columns: 270px minmax(0, 1fr) 410px; }
@@ -260,6 +306,7 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
     <span class="busy" id="busy">updating…</span>
     <span id="dataTag">loading…</span>
     <span class="warn">Research prototype · not for clinical use</span>
+    <button class="ghost primary" id="tourBtn" title="Step-by-step guided tour (T)">Guided tour</button>
     <button class="ghost" id="themeBtn" title="Switch light / dark (D)">Dark</button>
     <button class="ghost" id="fsBtn" title="Full screen (F)">Full screen</button>
   </div>
@@ -270,23 +317,30 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
 <main class="layout">
   <!-- 1: patient + settings -->
   <aside class="panel">
-    <section class="pad">
-      <h2 class="h"><span class="n">1</span>Pick a patient</h2>
+    <section class="pad" id="patSec">
+      <h2 class="h"><span class="n">1</span>Pick a patient <button class="info" data-info="patients" aria-label="What is this?">?</button></h2>
       <div id="patients"></div>
       <div class="picked" id="picked"></div>
     </section>
+    <section class="pad" id="uploadSec">
+      <h2 class="h-sm h">Or upload an ECG <button class="info" data-info="upload" aria-label="What is this?">?</button></h2>
+      <label class="drop" id="drop"><b>Drop files here, or click</b>CSV (one column per lead, mV) or WFDB (.hea + .dat)<input type="file" id="fileIn" multiple accept=".csv,.txt,.hea,.dat"></label>
+      <div class="fs-row">CSV sampling rate <input id="fsIn" type="number" min="50" max="10000" value="100"> Hz</div>
+      <div class="up-status" id="upStatus"></div>
+      <div class="examples" id="examples"></div>
+    </section>
     <section class="pad">
       <h2 class="h-sm">Settings</h2>
-      <div class="field">
-        <label>Lead quality q comes from</label>
+      <div class="field" id="qualityField">
+        <div class="flabel">Lead quality q comes from <button class="info" data-info="quality" aria-label="What is this?">?</button></div>
         <div class="seg" id="qualitySeg">
           <button data-v="switches">Lead switches</button>
           <button data-v="sqa">Quality checker</button>
         </div>
         <div class="why" id="qualityWhy"></div>
       </div>
-      <div class="field">
-        <label>Baseline to compare with</label>
+      <div class="field" id="baseField">
+        <div class="flabel">Baseline to compare with <button class="info" data-info="baseline" aria-label="What is this?">?</button></div>
         <div class="seg" id="baseSeg">
           <button data-v="resnet_c1">Trained with<br>broken leads</button>
           <button data-v="resnet_c0">Trained on<br>clean ECGs</button>
@@ -296,24 +350,24 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
     </section>
     <section class="pad keys">
       <kbd>←</kbd><kbd>→</kbd> patient · <kbd>1</kbd>–<kbd>5</kbd> failure<br>
-      <kbd>Q</kbd> quality source · <kbd>B</kbd> baseline<br><kbd>D</kbd> dark mode · <kbd>F</kbd> full screen
+      <kbd>Q</kbd> quality source · <kbd>B</kbd> baseline<br><kbd>D</kbd> dark mode · <kbd>F</kbd> full screen<br><kbd>T</kbd> guided tour
     </section>
   </aside>
 
   <!-- 2: lead failure + ECG + lower row -->
   <div class="col">
-    <section class="panel pad">
+    <section class="panel pad" id="scenPanel">
       <div class="row-between">
-        <h2 class="h"><span class="n">2</span>Make leads fail</h2>
+        <h2 class="h"><span class="n">2</span>Make leads fail <button class="info" data-info="failures" aria-label="What is this?">?</button></h2>
         <span class="note" id="scenNote"></span>
       </div>
       <div class="scen" id="scenarios"></div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="ecgPanel">
       <div class="ecg-head">
         <div>
-          <h3 class="h-sm">12-lead ECG</h3>
+          <h3 class="h-sm h">12-lead ECG <button class="info" data-info="ecg" aria-label="What is this?">?</button></h3>
           <p class="sub" id="ecgSub"></p>
         </div>
         <div class="legend">
@@ -341,14 +395,14 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
     </section>
 
     <div class="lower">
-      <section class="panel pad">
-        <h3 class="h-sm">Where LeadGuard looks</h3>
+      <section class="panel pad" id="heatPanel">
+        <h3 class="h-sm h">Where LeadGuard looks <button class="info" data-info="attention" aria-label="What is this?">?</button></h3>
         <p class="sub">Lead-to-lead attention, last layer, mean over heads</p>
         <div class="heat" id="heat"></div>
         <p class="p-note">Row: the lead being read. Column: the lead it borrows from. An unplugged lead (q below 0.02) gets exactly zero attention, so its column goes blank, and its own row is left out of the final answer (faded).</p>
       </section>
       <section class="panel pad" id="testsetPanel">
-        <h3 class="h-sm">Across the whole test set</h3>
+        <h3 class="h-sm h">Across the whole test set <button class="info" data-info="testset" aria-label="What is this?">?</button></h3>
         <p class="sub">Macro-AUROC with k random leads unplugged</p>
         <svg class="chart" id="chart" viewBox="0 0 360 210" role="img" aria-label="Macro-AUROC versus unplugged leads"></svg>
         <div class="chart-legend" id="chartLegend"></div>
@@ -359,8 +413,8 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
 
   <!-- 3: results -->
   <div class="col results">
-    <section class="panel pad">
-      <h2 class="h"><span class="n">3</span>Compare the answers</h2>
+    <section class="panel pad" id="comparePanel">
+      <h2 class="h"><span class="n">3</span>Compare the answers <button class="info" data-info="compare" aria-label="What is this?">?</button></h2>
       <div class="truth"><span>True diagnosis</span><span id="truth"></span></div>
       <div id="banner"></div>
       <div class="models">
@@ -369,8 +423,8 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
       </div>
     </section>
 
-    <section class="panel pad">
-      <h3 class="h-sm">Probability per class</h3>
+    <section class="panel pad" id="probPanel">
+      <h3 class="h-sm h">Probability per class <button class="info" data-info="probs" aria-label="What is this?">?</button></h3>
       <div class="prob-legend">
         <span><i style="background:var(--base)"></i><span id="legBase">Baseline</span></span>
         <span><i style="background:var(--lg)"></i>LeadGuard</span>
@@ -379,8 +433,8 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
       <div class="prob-grid" id="probs"></div>
     </section>
 
-    <section class="panel pad">
-      <h3 class="h-sm">Should LeadGuard answer at all?</h3>
+    <section class="panel pad" id="abstainPanel">
+      <h3 class="h-sm h">Should LeadGuard answer at all? <button class="info" data-info="abstain" aria-label="What is this?">?</button></h3>
       <p class="sub">It abstains if either check fails (limits set on validation data).</p>
       <div class="meter">
         <div class="meter-k"><span>Usable signal Σq</span><span class="v" id="qsumV">–</span></div>
@@ -395,6 +449,10 @@ footer { padding: 4px 22px 16px; font-size: 12px; color: var(--muted); }
     </section>
   </div>
 </main>
+
+<div class="pop" id="pop" role="dialog"></div>
+<div class="tour-ring" id="tourRing"></div>
+<div class="tour-card" id="tourCard" role="dialog" aria-live="polite"></div>
 
 <footer>Research prototype, not for clinical use. Lead failures are simulated; the models were trained on retrospective data (PTB-XL) and are not clinically validated.</footer>
 
@@ -414,30 +472,47 @@ const SCENARIOS = [
   { id: "emg", t: "Muscle noise", d: "3 leads, 10 dB EMG" },
 ];
 
-let META = null, LAST = null, seq = 0;
+let META = null, LAST = null, seq = 0, UPLOADS = [];
 const S = { sample: 0, on: Array(12).fill(true), noisy: [], quality: "switches", baseline: "resnet_c1", scenario: "all", seed: 1 };
 
 // ------------------------------------------------------------ state
-function shuffled(n) {
-  const a = [...Array(n).keys()];
-  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+const isUp = (k) => typeof k === "string";
+const curUpload = () => UPLOADS.find((u) => u.id === S.sample);
+function presentMask() {  // leads that exist in the current recording (an upload may lack some)
+  const u = isUp(S.sample) ? curUpload() : null;
+  return META.leads.map((n) => !(u && u.info.missing.includes(n)));
+}
+function shuffled(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
-function applyScenario(id) {
+function setScenario(id) {
   S.scenario = id;
-  S.on = Array(12).fill(true);
+  S.on = presentMask();
   S.noisy = [];
+  const avail = [...Array(12).keys()].filter((j) => S.on[j]);
   if (id === "chest") CHEST.forEach((j) => (S.on[j] = false));
   if (id === "limb") LIMB.forEach((j) => (S.on[j] = false));
-  if (id === "random6") shuffled(12).slice(0, 6).forEach((j) => (S.on[j] = false));
-  if (id === "emg") { S.noisy = shuffled(12).slice(0, 3).sort((a, b) => a - b); S.seed++; S.quality = "sqa"; }
-  update();
+  if (id === "random6") shuffled(avail).slice(0, 6).forEach((j) => (S.on[j] = false));
+  if (id === "emg") { S.noisy = shuffled(avail).slice(0, 3).sort((a, b) => a - b); S.seed++; S.quality = "sqa"; }
 }
-function toggleLead(j) { S.on[j] = !S.on[j]; S.scenario = "custom"; update(); }
-function setSample(i) { S.sample = (i + META.samples.length) % META.samples.length; update(); }
-function patientName(i) {
-  const s = META.samples[i];
-  return `${s.target} ${META.samples.filter((x) => x.target === s.target).findIndex((x) => x.index === i) + 1}`;
+function applyScenario(id) { setScenario(id); return update(); }
+function toggleLead(j) { S.on[j] = !S.on[j]; S.scenario = "custom"; return update(); }
+function selectSample(key) {
+  const wasUp = isUp(S.sample);
+  S.sample = key;
+  if (isUp(key) || wasUp) return applyScenario("all");
+  return update();
+}
+function stepSample(d) {
+  const n = META.samples.length, cur = isUp(S.sample) ? (d > 0 ? -1 : 0) : S.sample;
+  return selectSample((cur + d + n) % n);
+}
+function patientName(key) {
+  if (isUp(key)) { const u = UPLOADS.find((x) => x.id === key); return u ? u.name : "uploaded ECG"; }
+  const s = META.samples[key];
+  return `${s.target} ${META.samples.filter((x) => x.target === s.target).findIndex((x) => x.index === key) + 1}`;
 }
 
 // ------------------------------------------------------------ server
@@ -460,15 +535,57 @@ async function update() {
 }
 function showError(msg) { const el = $("#error"); el.textContent = msg; el.style.display = "block"; }
 
+// ------------------------------------------------------------ upload
+function readAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve({ name: file.name, data: String(r.result).split(",")[1] || "" });
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+function upStatus(html, bad) { const el = $("#upStatus"); el.innerHTML = html; el.classList.toggle("bad", !!bad); }
+async function uploadFiles(fileList) {
+  const files = [...fileList];
+  if (!files.length) return;
+  upStatus("Reading " + esc(files.map((f) => f.name).join(", ")) + " …");
+  try {
+    const payload = await Promise.all(files.map(readAsBase64));
+    const res = await fetch("/api/upload", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files: payload, fs: +$("#fsIn").value || META.fs }) });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error || res.statusText);
+    UPLOADS = UPLOADS.filter((u) => u.name !== r.name).concat(r).slice(-10);
+    const i = r.info, notes = [`${i.source}, ${i.fs} Hz, ${i.seconds} s`, ...i.notes];
+    if (i.missing.length) notes.push(`not in the file: ${i.missing.join(", ")}`);
+    upStatus(`Loaded <b>${esc(r.name)}</b>: ${esc(notes.join("; "))}.` +
+      (r.labels ? ` PTB-XL label: <b>${esc(r.labels.join(" + "))}</b>.` : " No reference diagnosis for this file."));
+    await selectSample(r.id);
+  } catch (e) {
+    upStatus("Could not use this file: " + esc(e.message.replace(/^bad request: /, "")), true);
+  } finally {
+    $("#fileIn").value = "";
+  }
+}
+
 // ------------------------------------------------------------ controls
 function renderControls() {
-  $("#patients").innerHTML = META.classes.map((c) => {
+  let html = META.classes.map((c) => {
     const chips = META.samples.filter((s) => s.target === c).map((s, k) =>
       `<button class="chip${s.index === S.sample ? " active" : ""}" data-sample="${s.index}" title="${esc(c)} ${k + 1}: true labels ${esc(s.labels.join(" + "))}">${k + 1}</button>`).join("");
     return `<div class="group"><div class="group-name"><b>${esc(META.class_names[c])}</b><span>${esc(c)}</span></div><div class="chips">${chips}</div></div>`;
   }).join("");
-  const s = META.samples[S.sample];
-  $("#picked").innerHTML = `Showing <b>${esc(patientName(S.sample))}</b> · true labels ${esc(s.labels.join(" + "))}`;
+  if (UPLOADS.length) html += `<div class="group"><div class="group-name"><b>Uploaded</b><span>FILE</span></div><div class="chips ups">` +
+    UPLOADS.map((u) => `<button class="chip up${u.id === S.sample ? " active" : ""}" data-upload="${esc(u.id)}" title="${esc(u.name)}">${esc(u.name)}</button>`).join("") + `</div></div>`;
+  $("#patients").innerHTML = html;
+  if (isUp(S.sample)) {
+    const u = curUpload();
+    $("#picked").innerHTML = `Showing <b>${esc(u.name)}</b> · uploaded · ` +
+      (u.labels ? `PTB-XL label ${esc(u.labels.join(" + "))}` : "no reference diagnosis");
+  } else {
+    const s = META.samples[S.sample];
+    $("#picked").innerHTML = `Showing <b>${esc(patientName(S.sample))}</b> · true labels ${esc(s.labels.join(" + "))}`;
+  }
 
   $("#scenarios").innerHTML = SCENARIOS.map((sc, i) =>
     `<button class="${S.scenario === sc.id ? "active" : ""}" data-scen="${sc.id}" title="${esc(sc.t)}: ${esc(sc.d)} (key ${i + 1})"><span class="t">${esc(sc.t)}</span><span class="d">${esc(sc.d)}</span></button>`).join("");
@@ -485,6 +602,14 @@ function renderControls() {
   $("#baseWhy").textContent = S.baseline === "resnet_c1"
     ? "Standard ResNet that saw broken leads in training: the fair comparison."
     : "Standard ResNet that only ever saw complete ECGs.";
+}
+
+function renderExamples() {
+  const ex = META.examples || [];
+  $("#examples").innerHTML = ex.length
+    ? "Example files: PTB-XL test records that are not in the list above.<br>" + ex.map((e) =>
+        `${esc(e.labels.join(" + "))}: ` + e.files.map((f) => `<a href="/examples/${encodeURIComponent(f)}" download>${esc(f)}</a>`).join(" + ")).join("<br>")
+    : "";
 }
 
 // ------------------------------------------------------------ rendering
@@ -508,7 +633,9 @@ function renderECG(r) {
     return `<div class="q-cell" title="q = ${q.toFixed(3)}"><div class="q-track"><div class="q-fill ${cls}" style="width:${(q * 100).toFixed(1)}%"></div></div><span class="q-val">${q.toFixed(2)}</span></div>`;
   }).join("");
   $("#qHead").textContent = S.quality === "sqa" ? "q · quality checker" : "q · lead switches";
-  $("#ecgSub").textContent = `${patientName(S.sample)} · raw signal in mV · 10 s at ${META.fs} Hz`;
+  const u = isUp(S.sample) ? curUpload() : null;
+  $("#ecgSub").textContent = u ? `${u.name} · uploaded ${u.info.source} · shown in mV at ${META.fs} Hz`
+                               : `${patientName(S.sample)} · raw signal in mV · 10 s at ${META.fs} Hz`;
 }
 
 function renderHeat(r) {
@@ -559,31 +686,36 @@ function renderChart(r) {
 const predList = (pred) => META.classes.filter((c, k) => pred[k]);
 const sameSet = (a, b) => a.length === b.length && a.every((c) => b.includes(c));
 
-function modelCard(el, kind, who, name, m, truth, abstained) {
-  const pred = predList(m.pred), full = predList(m.pred_full);
-  const wrong = pred.filter((c) => !truth.includes(c)), missed = truth.filter((c) => !pred.includes(c));
-  const chips = pred.length ? pred.map((c) => `<span class="pred${truth.includes(c) ? "" : " wrong"}" title="${esc(META.class_names[c])}">${esc(c)}</span>`).join("")
+function modelCard(el, kind, who, name, m, truth, abstained, refName) {
+  const pred = predList(m.pred), full = predList(m.pred_full), known = truth !== null;
+  const wrong = known ? pred.filter((c) => !truth.includes(c)) : [], missed = known ? truth.filter((c) => !pred.includes(c)) : [];
+  const chips = pred.length ? pred.map((c) => `<span class="pred${wrong.includes(c) ? " wrong" : ""}" title="${esc(META.class_names[c])}">${esc(c)}</span>`).join("")
                             : `<span class="pred none">no class</span>`;
   let verdict, bad = false;
   if (abstained) verdict = "Declined to answer. Faded: what it would have said.";
+  else if (!known) verdict = "No reference diagnosis for this file.";
   else if (!wrong.length && !missed.length) verdict = "Matches the true diagnosis.";
   else { bad = true; verdict = [wrong.length ? `Extra: ${wrong.join(", ")}` : "", missed.length ? `Missed: ${missed.join(", ")}` : ""].filter(Boolean).join(" · "); }
   const changed = !sameSet(pred, full);
-  const ref = changed ? `With all 12 leads it said <b>${esc(full.join(" + ") || "no class")}</b>` : "Same as with all 12 leads";
+  const ref = changed ? `${refName} it said <b>${esc(full.join(" + ") || "no class")}</b>` : `Same as ${refName.toLowerCase()}`;
   el.className = `model ${kind}${abstained ? " abstained" : ""}`;
   el.innerHTML = `<div class="who">${esc(who)}</div><div class="name">${esc(name)}</div><div class="preds">${chips}</div>` +
     `<div class="verdict${bad ? " bad" : ""}">${esc(verdict)}</div><div class="ref${changed ? " changed" : ""}">${ref}</div>`;
 }
 
 function renderResults(r) {
-  $("#truth").innerHTML = r.truth.map((c) => `<span class="tl">${esc(c)} <small>${esc(META.class_names[c])}</small></span>`).join("");
+  const truth = r.truth, known = truth !== null;
+  $("#truth").innerHTML = known
+    ? truth.map((c) => `<span class="tl">${esc(c)} <small>${esc(META.class_names[c])}</small></span>`).join("")
+    : `<span class="note">unknown (uploaded file)</span>`;
   $("#banner").innerHTML = r.abstain
     ? `<div class="banner"><b>ABSTAIN</b>LeadGuard declines to classify this record: ${esc(r.reasons.map((x) => x.kind === "signal"
         ? `only ${x.value.toFixed(2)} leads' worth of usable signal is left (needs ${x.limit.toFixed(0)})`
         : `its uncertainty ${x.value.toFixed(3)} is above the limit ${x.limit.toFixed(3)}`).join("; and "))}.</div>`
     : "";
-  modelCard($("#mBase"), "base", S.baseline === "resnet_c1" ? "Baseline · broken-lead training" : "Baseline · clean training", "ResNet", r.base, r.truth, false);
-  modelCard($("#mLg"), "lg", "Quality-gated · broken-lead training", "LeadGuard", r.lg, r.truth, r.abstain);
+  const refName = isUp(S.sample) ? "With every lead in the file" : "With all 12 leads";
+  modelCard($("#mBase"), "base", S.baseline === "resnet_c1" ? "Baseline · broken-lead training" : "Baseline · clean training", "ResNet", r.base, truth, false, refName);
+  modelCard($("#mLg"), "lg", "Quality-gated · broken-lead training", "LeadGuard", r.lg, truth, r.abstain, refName);
   $("#legBase").textContent = "ResNet";
 
   $("#probs").innerHTML = META.classes.map((c, k) => {
@@ -591,7 +723,7 @@ function renderResults(r) {
       `<div class="bar-row"><div class="bar ${cls}${faded ? " faded" : ""}" title="${esc(who)}: p = ${m.prob[k].toFixed(3)}, threshold ${m.thr[k].toFixed(2)}">` +
       `<div class="f" style="width:${(m.prob[k] * 100).toFixed(1)}%"></div><div class="thr" style="left:calc(${(m.thr[k] * 100).toFixed(1)}% - 1px)"></div></div>` +
       `<span class="v">${m.prob[k].toFixed(2)}</span></div>`;
-    return `<div class="cls">${esc(c)}${r.truth.includes(c) ? '<span class="true-mark">true</span>' : ""}<small>${esc(META.class_names[c])}</small></div>` +
+    return `<div class="cls">${esc(c)}${known && truth.includes(c) ? '<span class="true-mark">true</span>' : ""}<small>${esc(META.class_names[c])}</small></div>` +
       `<div class="bars">${bar("b", r.base, false, r.base.label)}${bar("l", r.lg, r.abstain, "LeadGuard")}</div>`;
   }).join("");
 
@@ -610,7 +742,153 @@ function renderResults(r) {
   $("#uN").innerHTML = (uBad ? "<b style='color:var(--crit)'>Too uncertain.</b> " : "") + `From the evidential head, 0 to 1. Abstains above ${r.u_threshold.toFixed(3)}.`;
 }
 
-function render(r) { renderECG(r); renderHeat(r); renderChart(r); renderResults(r); }
+function render(r) { renderECG(r); renderHeat(r); renderChart(r); renderResults(r); if (TI >= 0) placeTour(); }
+
+// ------------------------------------------------------------ info popovers
+const INFO = {
+  patients: ["The patients", `<p>20 real ECGs from the PTB-XL <b>test set</b> (fold 10), which no model saw during training: 4 for each diagnosis.</p>
+    <ul><li><b>NORM</b>: normal ECG</li><li><b>MI</b>: myocardial infarction (heart attack)</li><li><b>STTC</b>: ST/T change (ST segment or T wave abnormal)</li>
+    <li><b>CD</b>: conduction disturbance (e.g. bundle branch block)</li><li><b>HYP</b>: hypertrophy (thickened heart muscle)</li></ul>
+    <p>A record can have several labels. These patients were picked because both models are right on them with all 12 leads, so the demo shows what changes when leads fail, not how often the models are right. The whole-test-set chart gives the real average.</p>`],
+  upload: ["Upload an ECG", `<p>Two formats work:</p><ul><li><b>CSV</b>: one column per lead in mV, with a header row of lead names (I, II, III, aVR, aVL, aVF, V1–V6) or 12 columns in that order. Set the sampling rate below.</li>
+    <li><b>WFDB</b> (the PhysioNet / PTB-XL format): select the <b>.hea</b> and the <b>.dat</b> file together.</li></ul>
+    <p>The signal is resampled to 100 Hz and the first 10 seconds are used. Leads missing from the file are treated as unplugged.</p>
+    <p>The models were trained on PTB-XL (Schiller devices). A recording from another machine may be read less reliably. Only the example files come with a reference diagnosis.</p>`],
+  quality: ["Lead quality q", `<p>Each lead gets a quality score q from 0 (useless) to 1 (perfect). LeadGuard multiplies each lead's attention weight by q, and ignores a lead completely below 0.02.</p>
+    <p><b>Lead switches</b>: q = 1 if plugged in, 0 if not. Simple, but blind to noise.</p>
+    <p><b>Quality checker</b> (SQA): a small separate neural network (47k parameters) that reads each lead and scores it. It was trained on simulated failures and then frozen. This is what LeadGuard uses in the study.</p>`],
+  baseline: ["The baseline", `<p>Both options are the same standard 1-D ResNet (574k parameters, a strong model on PTB-XL).</p>
+    <p><b>Trained with broken leads</b> saw simulated failures during training, like LeadGuard. Comparing with this one is the fair test, and the key point of the study.</p>
+    <p><b>Trained on clean ECGs</b> only ever saw complete recordings. Switch to it after unplugging leads to see why training data matters.</p>`],
+  failures: ["Making leads fail", `<p>These presets simulate what goes wrong in hospitals and ambulances, the same way as in the study:</p>
+    <ul><li><b>Unplugged lead</b>: the signal becomes zero (a detached electrode).</li><li><b>Chest / limb leads</b>: a whole group missing.</li>
+    <li><b>Muscle noise</b>: 20–45 Hz noise at 10 dB signal-to-noise ratio, the study's test level.</li></ul>
+    <p>You can also click any lead name on the ECG to unplug it or plug it back in.</p>`],
+  ecg: ["The 12-lead ECG", `<p>A 10-second ECG: the heart's electrical activity, sampled 100 times per second, in millivolts.</p>
+    <p>The 12 rows are <b>leads</b>, views of the heart computed from 10 electrodes. <b>I, II, III, aVR, aVL, aVF</b> come from the arm and leg electrodes; <b>V1–V6</b> are on the chest.</p>
+    <p>Grid: 0.2 s by 0.5 mV; the black bar is 1 mV. Dashed grey = unplugged, orange = noisy. The bars on the right are each lead's quality q.</p>`],
+  attention: ["Where LeadGuard looks", `<p>LeadGuard first turns each lead into its own summary (a per-lead ResNet), then lets every lead borrow information from the others (attention, 2 layers, 4 heads).</p>
+    <p>Row = the lead being updated; column = the lead it borrows from; darker = more weight. Each weight is multiplied by that lead's quality q.</p>
+    <p>A lead with q below 0.02 gets <b>exactly zero</b> weight, so its column is blank and it cannot change the answer at all. The unit tests check this by filling such leads with random noise.</p>`],
+  testset: ["The honest average", `<p>Macro-AUROC on all 2,158 test records as k random leads are unplugged (3 random draws per k).</p>
+    <p>AUROC is the chance that the model ranks a random patient with a condition above one without it: 0.5 is guessing, 1 is perfect. "Macro" averages the 5 diagnoses.</p>
+    <p>With 10 leads unplugged: ResNet trained on clean ECGs 0.61, ResNet trained with broken leads 0.80, LeadGuard 0.80. Training data made the difference; the architecture did not.</p>`],
+  compare: ["Compare the answers", `<p>Each card shows the diagnoses a model gives. A dashed red label is wrong (not in the true diagnosis).</p>
+    <p>The grey line underneath shows what the same model said with all 12 leads, so you can see what the failure changed.</p>
+    <p>LeadGuard can also <b>abstain</b>: its answer is then faded and a red banner explains why.</p>`],
+  probs: ["Probability per class", `<p>Each model gives a separate probability for each diagnosis (a record can have several).</p>
+    <p>The black tick is the decision threshold, tuned for each diagnosis on validation data (the threshold that maximises the F1 score). A diagnosis is given when the bar passes its tick.</p>
+    <p>The ResNet's probabilities are temperature-scaled (calibrated on validation data); LeadGuard's come from its evidential head.</p>`],
+  abstain: ["Should LeadGuard answer?", `<p>LeadGuard declines to answer if either check fails:</p>
+    <ul><li><b>Usable signal</b>: the sum of the 12 quality scores is below 3, about three good leads.</li>
+    <li><b>Uncertainty U</b>: from the evidential head, above a limit set so that 5% of clean validation records are rejected (0.486 for this model).</li></ul>
+    <p>A finding of the study: U hardly changes when leads are removed (0.284 to 0.279 on average, from 0 to 10 missing leads), so the lead-count check does all the useful abstaining.</p>`],
+};
+function openInfo(btn) {
+  const [title, body] = INFO[btn.dataset.info] || ["", ""], pop = $("#pop");
+  if (pop.style.display === "block" && pop.dataset.key === btn.dataset.info) return closeInfo();
+  pop.innerHTML = `<h4>${title}</h4>${body}`;
+  pop.dataset.key = btn.dataset.info;
+  pop.style.display = "block";
+  const r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, m = 10;
+  let left = Math.min(Math.max(m, r.left - 20), innerWidth - w - m), top = r.bottom + 8;
+  if (top + h > innerHeight - m) top = Math.max(m, r.top - h - 8);
+  pop.style.left = left + "px";
+  pop.style.top = top + "px";
+}
+function closeInfo() { $("#pop").style.display = "none"; $("#pop").dataset.key = ""; }
+
+// ------------------------------------------------------------ guided tour
+// Each step sets the demo to a fixed state; the texts describe what these models do in that state.
+const ONLY = (...names) => META.leads.map((n) => names.includes(n));
+const TOUR = [
+  { sel: ".top", title: "Welcome to LeadGuard",
+    set: { sample: 0, scen: "all", quality: "switches", baseline: "resnet_c1" },
+    body: `<p>ECG classifiers are trained on clean recordings, but in hospitals and ambulances electrodes fall off and leads pick up noise. Here you can break leads on real patients and watch two models react.</p>
+      <p><b style="color:var(--lg)">Blue: LeadGuard</b>, which scores each lead's quality and can refuse to answer. <b style="color:var(--base)">Orange: a standard ResNet</b>. The patients come from the PTB-XL test set, which neither model saw in training.</p>` },
+  { sel: "#ecgPanel", title: "A real 12-lead ECG", set: {},
+    body: `<p>This is <b>NORM 1</b>, a patient with a normal ECG: 10 seconds, 100 samples per second.</p>
+      <p>The 12 rows are 12 <b>leads</b>, views of the heart. The top six (I to aVF) come from the arm and leg electrodes, the bottom six (V1 to V6) from the chest. The bars on the right are each lead's quality score q.</p>` },
+  { sel: "#comparePanel", title: "Both models agree", set: {},
+    body: `<p>With all 12 leads, both models answer <b>NORM</b>, which matches the diagnosis recorded in the dataset.</p>` },
+  { sel: "#ecgPanel", title: "Unplug the chest leads", set: { scen: "chest" },
+    body: `<p>V1 to V6 are now disconnected (dashed grey) and their quality q drops to 0, as when the chest electrodes come off.</p>
+      <p>Both models still answer NORM. Both were trained with simulated broken leads.</p>` },
+  { sel: "#comparePanel", title: "The model that never saw a broken lead", set: { baseline: "resnet_c0" },
+    body: `<p>Same patient, same missing leads, but the baseline is now a ResNet trained only on complete ECGs.</p>
+      <p>It reports <b>MI + STTC</b>: a heart attack in a patient with a normal ECG. It never saw a missing lead during training.</p>
+      <p>This is the study's main result in one example: <b>training with broken leads matters most</b>. On the whole test set with 10 leads missing: 0.61 versus 0.80 macro-AUROC.</p>` },
+  { sel: "#comparePanel", title: "Does quality gating add more?", set: { sample: 4, scen: "chest", baseline: "resnet_c1" },
+    body: `<p>Patient <b>MI 1</b> (heart attack), chest leads off, fair baseline again. The ResNet still finds MI but adds a false <b>STTC</b>; LeadGuard keeps MI only.</p>
+      <p>But this is one example. Across all 2,158 test records, LeadGuard was <b>not</b> significantly better than this ResNet in any of 28 conditions.</p>` },
+  { sel: "#heatPanel", title: "How LeadGuard ignores a dead lead", set: {},
+    body: `<p>LeadGuard summarises each lead separately, then lets leads borrow information from each other (attention). Each lead's weight is multiplied by its quality q.</p>
+      <p>The chest columns are blank: a lead with q below 0.02 gets <b>exactly zero</b> weight, so it cannot change the answer at all.</p>` },
+  { sel: "#ecgPanel", title: "Noise instead of a missing lead",
+    set: { sample: 4, on: "all", noisy: [3, 6, 10], seed: 1, quality: "sqa", scenLabel: "emg" },
+    body: `<p>Now aVR, V1 and V5 carry muscle noise (orange, 10 dB). Lead switches cannot see noise, so q now comes from the <b>quality checker</b>, a small separate network that reads each lead.</p>
+      <p>It scores the noisy leads 0.77, 0.52 and 0.59 and the clean ones 1.00. Both models still answer MI.</p>` },
+  { sel: "#abstainPanel", title: "Too little signal: LeadGuard refuses",
+    set: { sample: 4, on: ["II", "V2"], noisy: [], quality: "switches" },
+    body: `<p>Only leads II and V2 are left. The usable signal Σq is 2, below the limit of 3, so LeadGuard <b>abstains</b> (red banner in the panel above).</p>
+      <p>Its faded answer would have been wrong: it adds STTC. This simple lead-count rule did all the useful abstaining in the study.</p>` },
+  { sel: "#abstainPanel", title: "The uncertainty barely moves", set: {},
+    body: `<p>Look at <b>U</b>, LeadGuard's evidential uncertainty: 0.16 with all leads and 0.34 with ten leads gone, still under its limit of 0.486.</p>
+      <p>On the whole test set the mean U stayed flat (0.284 to 0.279) while accuracy fell. This uncertainty does not notice missing leads, which is one of the study's findings.</p>` },
+  { sel: "#testsetPanel", title: "The honest average", set: {},
+    body: `<p>The demo patients were picked because both models get them right with all leads. This chart is the real result on all 2,158 test records.</p>
+      <p>The dashed line (ResNet trained on clean ECGs) falls to 0.61 with 10 leads unplugged; LeadGuard (0.80) and the ResNet trained with broken leads (0.80) stay together.</p>` },
+  { sel: "#uploadSec", title: "Try your own ECG", set: { sample: 0, scen: "all" },
+    body: `<p>Drop a CSV file (one column per lead, in mV) or a PTB-XL style WFDB record (.hea and .dat). It is resampled to 100 Hz and the first 10 seconds are used.</p>
+      <p>The example files are PTB-XL test records that are not in the list above. Press <b>Finish</b> to explore on your own; the <b>?</b> buttons explain every panel.</p>` },
+];
+let TI = -1;
+async function tourGo(i) {
+  if (i < 0 || i >= TOUR.length) return tourEnd();
+  TI = i;
+  closeInfo();
+  const st = TOUR[i].set;
+  if (st.sample !== undefined) S.sample = st.sample;
+  if (st.quality) S.quality = st.quality;
+  if (st.baseline) S.baseline = st.baseline;
+  if (st.seed !== undefined) S.seed = st.seed;
+  if (st.scen) setScenario(st.scen);
+  if (st.on) {
+    S.on = st.on === "all" ? Array(12).fill(true) : ONLY(...st.on);
+    S.noisy = st.noisy || [];
+    S.scenario = st.scenLabel || "custom";
+  }
+  await update();
+  const el = $(TOUR[i].sel);
+  const r = el.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > innerHeight) el.scrollIntoView({ block: r.height > innerHeight * 0.7 ? "start" : "center" });
+  placeTour();
+}
+function placeTour() {
+  if (TI < 0) return;
+  const st = TOUR[TI], el = $(st.sel), ring = $("#tourRing"), card = $("#tourCard"), last = TI === TOUR.length - 1;
+  card.innerHTML = `<div class="tour-step">Guided tour · step ${TI + 1} of ${TOUR.length}</div><h4>${st.title}</h4><div class="body">${st.body}</div>` +
+    `<div class="tour-nav"><div class="tour-dots">${TOUR.map((_, k) => `<i class="${k === TI ? "on" : ""}"></i>`).join("")}</div>` +
+    `<div class="btns"><button class="ghost" data-tour="end">Exit</button>${TI ? '<button class="ghost" data-tour="back">Back</button>' : ""}` +
+    `<button class="ghost primary" data-tour="next">${last ? "Finish" : "Next"}</button></div></div>`;
+  const r = el.getBoundingClientRect(), pad = 6;
+  ring.style.cssText = `display:block;left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + 2 * pad}px;height:${r.height + 2 * pad}px`;
+  card.style.display = "block";
+  const cw = card.offsetWidth, ch = card.offsetHeight, vw = innerWidth, vh = innerHeight, m = 14;
+  const clamp = (v, a, b) => Math.max(a, Math.min(v, b));
+  let left, top;
+  if (r.right + m + cw <= vw - m) { left = r.right + m; top = clamp(r.top, m, vh - ch - m); }
+  else if (r.left - m - cw >= m) { left = r.left - m - cw; top = clamp(r.top, m, vh - ch - m); }
+  else if (r.bottom + m + ch <= vh - m) { top = r.bottom + m; left = clamp(r.left, m, vw - cw - m); }
+  else if (r.top - m - ch >= m) { top = r.top - m - ch; left = clamp(r.left, m, vw - cw - m); }
+  else { left = vw - cw - m; top = vh - ch - m; }
+  card.style.left = left + "px";
+  card.style.top = top + "px";
+  card.querySelector('[data-tour="next"]').focus({ preventScroll: true });
+}
+function tourEnd() { TI = -1; $("#tourRing").style.display = "none"; $("#tourCard").style.display = "none"; }
+addEventListener("resize", () => placeTour());
+addEventListener("scroll", () => placeTour(), { passive: true });
 
 // ------------------------------------------------------------ theme
 function setTheme(t, save) {
@@ -633,34 +911,57 @@ function toggleFullscreen() {
 document.addEventListener("fullscreenchange", () => ($("#fsBtn").textContent = document.fullscreenElement ? "Exit full screen" : "Full screen"));
 document.addEventListener("click", (e) => {
   const b = e.target.closest("button");
-  if (!b || !META) return;
-  if (b.id === "fsBtn") toggleFullscreen();
+  if (!b) { if (!e.target.closest("#pop")) closeInfo(); return; }
+  if (!META) return;
+  if (b.dataset.info) { e.preventDefault(); return openInfo(b); }
+  closeInfo();
+  if (b.dataset.tour === "next") tourGo(TI + 1);
+  else if (b.dataset.tour === "back") tourGo(TI - 1);
+  else if (b.dataset.tour === "end") tourEnd();
+  else if (b.id === "tourBtn") tourGo(0);
+  else if (b.id === "fsBtn") toggleFullscreen();
   else if (b.id === "themeBtn") toggleTheme();
-  else if (b.dataset.sample !== undefined) setSample(+b.dataset.sample);
+  else if (b.dataset.sample !== undefined) selectSample(+b.dataset.sample);
+  else if (b.dataset.upload !== undefined) selectSample(b.dataset.upload);
   else if (b.dataset.scen) applyScenario(b.dataset.scen);
   else if (b.dataset.lead !== undefined) toggleLead(+b.dataset.lead);
   else if (b.parentElement.id === "qualitySeg") { S.quality = b.dataset.v; update(); }
   else if (b.parentElement.id === "baseSeg") { S.baseline = b.dataset.v; update(); }
 });
 document.addEventListener("keydown", (e) => {
-  if (!META || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (!META || e.ctrlKey || e.metaKey || e.altKey || e.target.matches("input")) return;
   const k = e.key.toLowerCase();
-  if (k === "arrowright") setSample(S.sample + 1);
-  else if (k === "arrowleft") setSample(S.sample - 1);
+  if (k === "escape") { closeInfo(); tourEnd(); return; }
+  if (TI >= 0) {
+    if (k === "arrowright" || k === "enter") tourGo(TI + 1);
+    else if (k === "arrowleft") tourGo(TI - 1);
+    else return;
+    e.preventDefault();
+    return;
+  }
+  if (k === "arrowright") stepSample(1);
+  else if (k === "arrowleft") stepSample(-1);
   else if (/^[1-5]$/.test(k)) applyScenario(SCENARIOS[+k - 1].id);
   else if (k === "q") { S.quality = S.quality === "sqa" ? "switches" : "sqa"; update(); }
   else if (k === "b") { S.baseline = S.baseline === "resnet_c1" ? "resnet_c0" : "resnet_c1"; update(); }
+  else if (k === "t") tourGo(0);
   else if (k === "f") toggleFullscreen();
   else if (k === "d") toggleTheme();
   else return;
   e.preventDefault();
 });
+$("#fileIn").addEventListener("change", (e) => uploadFiles(e.target.files));
+const drop = $("#drop");
+["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", (e) => uploadFiles(e.dataTransfer.files));
 
 (async function init() {
   try { META = await (await fetch("/api/meta")).json(); }
   catch (e) { showError("Could not reach the demo server. Start it with: python app.py"); return; }
   $("#dataTag").textContent = (META.data === "ptbxl" ? "PTB-XL test set" : `${META.data} data`) + (META.debug ? " · debug models" : "");
   $("#ticks").innerHTML = Array.from({ length: 11 }, (_, i) => `<span style="left:${i * 10}%">${i}</span>`).join("");
+  renderExamples();
   update();
 })();
 </script>

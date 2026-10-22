@@ -1,0 +1,47 @@
+{
+ "records": [
+  {
+   "record": "00057_lr",
+   "labels": [
+    "NORM"
+   ],
+   "files": [
+    "00057_lr.csv"
+   ],
+   "source": "PTB-XL v1.0.3 ecg_id 57, test fold 10, statement NORM (human-validated report)"
+  },
+  {
+   "record": "01737_lr",
+   "labels": [
+    "MI"
+   ],
+   "files": [
+    "01737_lr.hea",
+    "01737_lr.dat"
+   ],
+   "source": "PTB-XL v1.0.3 ecg_id 1737, test fold 10, statement IMI (human-validated report)"
+  },
+  {
+   "record": "00618_lr",
+   "labels": [
+    "CD"
+   ],
+   "files": [
+    "00618_lr.hea",
+    "00618_lr.dat"
+   ],
+   "source": "PTB-XL v1.0.3 ecg_id 618, test fold 10, statement CLBBB (human-validated report)"
+  },
+  {
+   "record": "03785_lr",
+   "labels": [
+    "HYP"
+   ],
+   "files": [
+    "03785_lr.hea",
+    "03785_lr.dat"
+   ],
+   "source": "PTB-XL v1.0.3 ecg_id 3785, test fold 10, statement LVH (human-validated report)"
+  }
+ ]
+}
